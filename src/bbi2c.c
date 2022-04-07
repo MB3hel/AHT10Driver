@@ -1,5 +1,6 @@
 
 #include <bbi2c.h>
+#include <circular_buffer.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -30,10 +31,10 @@
 /// Globals
 ////////////////////////////////////////////////////////////////////////////////
 
-uint8_t bbi2c_tx_buf[BBI2C_WB_SIZE];        // Transmit buffer
-size_t bbi2c_tx_pos;                        // Current position in TX buffer
-uint8_t bbi2c_tx_state;                     // Transmit state machine state
-uint8_t bbi2c_tx_bit;                       // Which bit in the current tx byte
+uint8_t bbi2c_tx_array[BBI2C_TX_BUF_SIZE];  // Backing array for transit buffer
+circular_buffer bbi2c_tx_cb;                // Transmit buffer
+uint8_t bbi2c_state;                        // Transmit state machine state
+uint8_t bbi2c_tx_bit;                       // Which bit in the current TX byte
 
 void (*bbi2c_read_callback)(void);
 
@@ -42,7 +43,7 @@ void (*bbi2c_read_callback)(void);
 /// Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-void bbi2c_(void){
+void bbi2c_next_state(void){
     // I2C transaction example: Transmit 0b1010_0110
     //        -1----      -1----            -1-----1----      --
     // SDA:         -0----      -0-----0----            -0----  --ACK--
@@ -76,7 +77,6 @@ void bbi2c_(void){
     // This function (bbi2c_handle_timeout) should be called when a wait is
     // finished.
 
-    // if(bbi2c_state == )
 }
 
 

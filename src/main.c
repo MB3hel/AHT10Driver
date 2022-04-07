@@ -7,6 +7,7 @@
 
 #include <clocks.h>
 #include <ports.h>
+#include <timers.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -28,12 +29,16 @@ int main(void){
 /// Interrupt Service Routines
 ////////////////////////////////////////////////////////////////////////////////
 
+// -----------------------------------------------------------------------------
+// Timer ISRs
+// -----------------------------------------------------------------------------
+
 #pragma vector=TIMER_A0_CCR0_VECTOR
 __interrupt void isr_timera0_ccr0(void){
 
 }
 
-#pragma vector=TIMER_A0_CCRn_VECTOR
+#pragma vector=TIMER_A0_CCRN_VECTOR
 __interrupt void isr_timera0_ccrn(void){
 
 }
@@ -43,7 +48,7 @@ __interrupt void isr_timera1_ccr0(void){
 
 }
 
-#pragma vector=TIMER_A1_CCRn_VECTOR
+#pragma vector=TIMER_A1_CCRN_VECTOR
 __interrupt void isr_timera1_ccrn(void){
 
 }

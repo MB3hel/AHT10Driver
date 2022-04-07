@@ -47,11 +47,11 @@
 
 // Timer A0
 #define TIMER_A0_CCR0_VECTOR    TIMER0_A0_VECTOR    // For CCR0
-#define TIMER_A0_CCRn_VECTOR    TIMER0_A1_VECTOR    // For CCR1, 2, ..., and OF
+#define TIMER_A0_CCRN_VECTOR    TIMER0_A1_VECTOR    // For CCR1, 2, ..., and OF
 
 // Timer A1
 #define TIMER_A1_CCR0_VECTOR    TIMER1_A0_VECTOR    // For CCR0
-#define TIMER_A1_CCRn_VECTOR    TIMER1_A1_VECTOR    // For CCR1, 2, ..., and OF
+#define TIMER_A1_CCRN_VECTOR    TIMER1_A1_VECTOR    // For CCR1, 2, ..., and OF
 
 #endif
 
