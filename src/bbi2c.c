@@ -76,7 +76,7 @@ void bbi2c_(void){
     // This function (bbi2c_handle_timeout) should be called when a wait is
     // finished.
 
-    if(bbi2c_state == )
+    // if(bbi2c_state == )
 }
 
 
