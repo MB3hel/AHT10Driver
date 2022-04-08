@@ -4,7 +4,7 @@
 
 
 void system_init(void){
-    if (CLOCK_CALBC1 == 0xFF) LPM4;    // Calibration erased. Sleep forever.
+    if (CLOCK_CALBC1 == 0xFF) LPM4;     // Calibration erased. Sleep forever.
 
     DCOCTL = 0;
     BCSCTL1 = CLOCK_CALBC1;             // BCSCTL1 calibration

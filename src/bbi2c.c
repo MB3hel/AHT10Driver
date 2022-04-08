@@ -11,20 +11,23 @@
 // Byte transmit states
 // -----------------------------------------------------------------------------
 
+// Not doing anything
+#define BBI2C_NONE                  0
+
 // These three states are looped over 8 times (once per bit)
-#define BBI2C_TX_SET_DATA           0
-#define BBI2C_TX_CLK_HIGH           1
-#define BBI2C_TX_CLK_LOW            2
+#define BBI2C_TX_SET_DATA           1
+#define BBI2C_TX_CLK_HIGH           2
+#define BBI2C_TX_CLK_LOW            3
 
 // These happen once each after transmit
-#define BBI2C_TX_ACK_CLK_HIGH       3
-#define BBI2C_TX_ACK_CLK_LOW        4
-#define BBI2C_TX_ACK_DATA_LOW       5
+#define BBI2C_TX_ACK_CLK_HIGH       4
+#define BBI2C_TX_ACK_CLK_LOW        5
+#define BBI2C_TX_ACK_DATA_LOW       6
 
 // -----------------------------------------------------------------------------
 
 
-// TODO: Byte receive states
+// TODO: Requesting / receiving data
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -36,15 +39,25 @@ circular_buffer bbi2c_tx_cb;                // Transmit buffer
 uint8_t bbi2c_state;                        // Transmit state machine state
 uint8_t bbi2c_tx_bit;                       // Which bit in the current TX byte
 
-void (*bbi2c_read_callback)(void);
-
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Functions
 ////////////////////////////////////////////////////////////////////////////////
 
+void bbi2c_init(void){
+    cb_init(&bbi2c_tx_cb, bbi2c_tx_array, BBI2C_TX_BUF_SIZE);
+    bbi2c_state = BBI2C_NONE;
+}
+
+void bbi2c_write(uint8_t b){
+    cb_write_byte(&bbi2c_tx_cb, b);
+    if(bbi2c_state = BBI2C_NONE){
+
+    }
+}
+
 inline void bbi2c_next_state(void){
-    // I2C transaction example: Transmit 0b1010_0110
+    // I2C example: Transmit 0b1010_0110
     //        -1----      -1----            -1-----1----      --
     // SDA:         -0----      -0-----0----            -0----  --ACK--
     //
