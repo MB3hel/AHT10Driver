@@ -17,6 +17,7 @@
 
 #define ports_sda_low()         P2OUT &= ~SDA
 #define ports_sda_high()        P2OUT |= SDA
+#define ports_sda_read()        P2IN & SDA
 
 #define ports_scl_low()         P2OUT &= ~SCL
 #define ports_scl_high()        P2OUT |= SCL

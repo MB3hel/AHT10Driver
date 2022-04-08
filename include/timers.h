@@ -1,6 +1,4 @@
-
-#ifndef INCLUDE_TIMERS_H_
-#define INCLUDE_TIMERS_H_
+#pragma once
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -9,5 +7,4 @@
 
 void timers_init(void);
 
-
-#endif /* INCLUDE_TIMERS_H_ */
+inline void timers_bbi2c_delay_enable(void);

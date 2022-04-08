@@ -43,7 +43,7 @@ void (*bbi2c_read_callback)(void);
 /// Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-void bbi2c_next_state(void){
+inline void bbi2c_next_state(void){
     // I2C transaction example: Transmit 0b1010_0110
     //        -1----      -1----            -1-----1----      --
     // SDA:         -0----      -0-----0----            -0----  --ACK--

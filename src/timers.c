@@ -1,6 +1,7 @@
 
 #include <timers.h>
 #include <msp430.h>
+#include <stdint.h>
 #include <g2553support.h>
 
 
@@ -56,3 +57,13 @@ void timers_init(void){
     timers_init_a0();
     timers_init_a1();
 }
+
+inline void timers_bbi2c_delay_enable(void){
+    // TA0 counts at 1MHz / 10 = 100kHz = BBI2C frequency
+    const uint16_t delay = 10;
+
+    TA0CCTL0 &= ~CCIFG;             // Clear CCR0 IFG
+    TA0CCR0 = TA0R + delay;         // Set time of next interrupt
+    TA0CCTL0 |= CCIE;               // Enable CCR0 interrupt
+}
+

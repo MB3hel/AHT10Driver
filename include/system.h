@@ -1,30 +1,23 @@
-/**
- * @file bbi2c.h
- * @brief Bit banged I2C master implementation
- * @author Marcus Behel (mgbehel@ncsu.edu)
- * @version 1.0.0
- */
-
 #pragma once
 
-
 #include <msp430.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stddef.h>
 
-#include <ports.h>
-#include <timers.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Macros
 ////////////////////////////////////////////////////////////////////////////////
 
-#define BBI2C_TX_BUF_SIZE       16
+#define ENABLE_INTERRUPTS       __bis_SR_register(GIE);
+#define DISABLE_INTERRUPTS      __bic_SR_register(GIE);
+#define DISABLE_WDT             WDTCTL = WDTPW + WDTHOLD;
 
+// Make sure these are set to the same frequency
+// Valid frequencies are 1MHz, 8MHz, 12MHz, 16MHz
+#define CLOCK_CALBC1      CALBC1_16MHZ
+#define CLOCK_CALDCO      CALDCO_16MHZ
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-inline void bbi2c_next_state(void);
+void system_init(void);
