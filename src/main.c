@@ -39,16 +39,7 @@ int main(void){
 #pragma vector=TIMER_A0_CCR0_VECTOR
 __interrupt void isr_timera0_ccr0(void){
     // CCR0: bbi2c timing
-    // BBI2C enables interrupt and configures CCR value when it needs a delay
-    // When timer interrupt occurs, notify bbi2c then disable interrupt
-    // BBI2C will re-enable interrupt next time it needs a delay.
-    //
-    // Note: bbi2c_next_state called directly from ISR instead of setting a flag
-    //       and handling in main because this ensures best possible timings
-    //       and the most consistent clock speed / data rate.
-
-    TA0CCTL0 &= ~CCIE;                  // Disable interrupt for CCR0
-    bbi2c_next_state();                 // Informs bbi2c that time elapsed
+    // Nothing to do in ISR
 }
 
 #pragma vector=TIMER_A0_CCRN_VECTOR

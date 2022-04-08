@@ -1,6 +1,10 @@
 /**
  * @file bbi2c.h
  * @brief Bit banged I2C master implementation
+ * Algorithm adapted from
+ * https://www.ti.com/lit/an/slaa703a/slaa703a.pdf?ts=1649382877460
+ *
+ * TODO: Convert to a non-blocking state machine based implementation
  * @author Marcus Behel (mgbehel@ncsu.edu)
  * @version 1.0.0
  */
@@ -17,16 +21,21 @@
 #include <timers.h>
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Macros
+/// Typedefs
 ////////////////////////////////////////////////////////////////////////////////
 
-#define BBI2C_TX_BUF_SIZE       16
+typedef struct {
+    uint8_t addr;
+    uint8_t *write_buf;
+    size_t write_count;
+    uint8_t *read_buf;
+    size_t read_count;
+    bool repeat_start;
+} bbi2c_transaction;
 
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-void bbi2c_init(void);
-
-inline void bbi2c_next_state(void);
+bool bbi2c_perform(bbi2c_transaction *transaction);

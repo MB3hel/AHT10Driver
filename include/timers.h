@@ -7,4 +7,4 @@
 
 void timers_init(void);
 
-inline void timers_bbi2c_delay_enable(void);
+inline void timers_bbi2c_delay(void);

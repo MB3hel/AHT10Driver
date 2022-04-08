@@ -15,12 +15,12 @@
 /// Function-like macros for external use
 ////////////////////////////////////////////////////////////////////////////////
 
-#define ports_sda_low()         P2OUT &= ~SDA
-#define ports_sda_high()        P2OUT |= SDA
-#define ports_sda_read()        P2IN & SDA
+#define PORTS_SDA_LOW           P2OUT &= ~SDA
+#define PORTS_SDA_HIGH          P2OUT |= SDA
+#define PORTS_SDA_READ          P2IN & SDA
 
-#define ports_scl_low()         P2OUT &= ~SCL
-#define ports_scl_high()        P2OUT |= SCL
+#define PORTS_SCL_LOW           P2OUT &= ~SCL
+#define PORTS_SCL_HIGH          P2OUT |= SCL
 
 
 ////////////////////////////////////////////////////////////////////////////////

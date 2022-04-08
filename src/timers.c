@@ -58,12 +58,18 @@ void timers_init(void){
     timers_init_a1();
 }
 
-inline void timers_bbi2c_delay_enable(void){
-    // TA0 counts at 1MHz / 10 = 100kHz = BBI2C frequency
-    const uint16_t delay = 10;
+inline void timers_bbi2c_delay(void){
+    // TA0 counts at 1MHz = TimerFreq
+    // I2CDataRate (100kHz to 800kHz generally)
+    // I2CDataRate = TimerFreq / (2 * period)
+    // Configured for 100kHz
+    const uint16_t period = 5;
 
     TA0CCTL0 &= ~CCIFG;             // Clear CCR0 IFG
-    TA0CCR0 = TA0R + delay;         // Set time of next interrupt
+    TA0CCR0 = TA0R + period;        // Set time of next interrupt
     TA0CCTL0 |= CCIE;               // Enable CCR0 interrupt
+
+    // Wait until interrupt flag set to continue
+    while(!(TA0CCTL0 & CCIFG));
 }
 

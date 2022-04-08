@@ -1,98 +1,72 @@
 
 #include <bbi2c.h>
-#include <circular_buffer.h>
-
-
-////////////////////////////////////////////////////////////////////////////////
-/// Macros
-////////////////////////////////////////////////////////////////////////////////
-
-// -----------------------------------------------------------------------------
-// Byte transmit states
-// -----------------------------------------------------------------------------
-
-// Not doing anything
-#define BBI2C_NONE                  0
-
-// These three states are looped over 8 times (once per bit)
-#define BBI2C_TX_SET_DATA           1
-#define BBI2C_TX_CLK_HIGH           2
-#define BBI2C_TX_CLK_LOW            3
-
-// These happen once each after transmit
-#define BBI2C_TX_ACK_CLK_HIGH       4
-#define BBI2C_TX_ACK_CLK_LOW        5
-#define BBI2C_TX_ACK_DATA_LOW       6
-
-// -----------------------------------------------------------------------------
-
-
-// TODO: Requesting / receiving data
-
-
-////////////////////////////////////////////////////////////////////////////////
-/// Globals
-////////////////////////////////////////////////////////////////////////////////
-
-uint8_t bbi2c_tx_array[BBI2C_TX_BUF_SIZE];  // Backing array for transit buffer
-circular_buffer bbi2c_tx_cb;                // Transmit buffer
-uint8_t bbi2c_state;                        // Transmit state machine state
-uint8_t bbi2c_tx_bit;                       // Which bit in the current TX byte
+#include <timers.h>
+#include <ports.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-void bbi2c_init(void){
-    cb_init(&bbi2c_tx_cb, bbi2c_tx_array, BBI2C_TX_BUF_SIZE);
-    bbi2c_state = BBI2C_NONE;
-}
-
-void bbi2c_write(uint8_t b){
-    cb_write_byte(&bbi2c_tx_cb, b);
-    if(bbi2c_state = BBI2C_NONE){
-
+void bbi2c_write_byte(uint8_t b){
+    uint_fast8_t i;
+    for(i = 8; i > 0; --i){
+        if(b & BIT7)
+            PORTS_SDA_HIGH;
+        else
+            PORTS_SDA_LOW;
+        PORTS_SCL_HIGH;
+        timers_bbi2c_delay();
+        b <<= 1;
+        PORTS_SCL_LOW;
+        timers_bbi2c_delay();
     }
 }
 
-inline void bbi2c_next_state(void){
-    // I2C example: Transmit 0b1010_0110
-    //        -1----      -1----            -1-----1----      --
-    // SDA:         -0----      -0-----0----            -0----  --ACK--
-    //
-    //         ----  ----  ----  ----  ----  ----  ----  ----  ----
-    // SCL: ----  ----  ----  ----  ----  ----  ----  ----  ----  ----
-    //
-    // First 8 rising edges of clock a bit is tx'd to slave
-    // Last rising edge slave should pull SDA low to ack before falling edge
-    //
-
-    // Pseudocode for blocking method of transmitting a byte:
-    // data = 0b10100110
-    // for i = 7...0
-    //     SDA = bit i of data (DIO write)
-    //     SCL_HIGH
-    //     wait(clock_period)
-    //     SCL_LOW
-    //     wait(clock_period)
-    // endfor
-    // SDA_HIGH
-    // SCL_HIGH
-    // wait(clock_period)
-    // ack = SDA (DIO read)
-    // SCL_LOW
-    // wait(clock_period)
-    // SDA_LOW
-    // if ack == 0 success else failure
-
-    // The following state machine implements the same algorithm non-blocking
-    // This function (bbi2c_handle_timeout) should be called when a wait is
-    // finished.
+bool bbi2c_write(bbi2c_transaction *trans){
 
 }
 
+bool bbi2c_read(bbi2c_transaction *trans){
+    size_t count = 0;
 
+    // Send start bit
+    PORTS_SDA_LOW;
+    PORTS_SCL_LOW;
+    timers_bbi2c_delay();
 
+    // Send address
+    bbi2c_write_byte(trans->addr);
 
+    // Check for ACK (ACK = SDA pulled low; NACK = no ACK = SDA stays high)
+    PORTS_SDA_HIGH;
+    PORTS_SCL_HIGH;
+    timers_bbi2c_delay();
+    if(!PORTS_SDA_READ){
+        // Got ACK continue with transmission
+        // TODO
+    }
 
+    // Send stop bit
+    PORTS_SCL_LOW;
+    PORTS_SDA_LOW;
+    timers_bbi2c_delay();
+    PORTS_SCL_HIGH;
+    PORTS_SDA_HIGH;
+    timers_bbi2c_delay();
+
+    // Success if all requested bytes were read
+    return count == trans->read_count;
+}
+
+bool bbi2c_perform(bbi2c_transaction *trans){
+    if(trans->write_count > 0){
+        if(!bbi2c_write(trans))
+            return false;
+    }
+    if(trans->read_count > 0){
+        if(!bbi2c_read(trans))
+            return false;
+    }
+    return true;
+}
