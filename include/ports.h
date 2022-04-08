@@ -21,6 +21,7 @@
 
 #define PORTS_SCL_LOW           P2OUT &= ~SCL
 #define PORTS_SCL_HIGH          P2OUT |= SCL
+#define PORTS_SCL_READ          P2OUT & SCL
 
 
 ////////////////////////////////////////////////////////////////////////////////
