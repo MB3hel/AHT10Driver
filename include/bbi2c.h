@@ -5,6 +5,7 @@
  * https://www.ti.com/lit/an/slaa703a/slaa703a.pdf?ts=1649382877460
  *
  * TODO: Convert to a non-blocking state machine based implementation
+ * TODO: Slave mode support
  *
  * Note: For now, this is a blocking implementation. Calling bbi2c_perform
  *       will block until transaction is complete. As such it is recommended
