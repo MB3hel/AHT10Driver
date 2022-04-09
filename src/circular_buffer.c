@@ -1,3 +1,7 @@
+/**
+ * @file circular_buffer.c
+ * @author Marcus Behel (mgbehel@ncsu.edu)
+ */
 
 #include <circular_buffer.h>
 

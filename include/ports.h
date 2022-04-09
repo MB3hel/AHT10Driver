@@ -1,3 +1,10 @@
+/**
+ * @file ports.h
+ * @brief Ports configuration and control
+ * @author Marcus Behel (mgbehel@ncsu.edu)
+ * @version 1.0.0
+ */
+
 #pragma once
 
 #include <msp430.h>
@@ -28,4 +35,7 @@
 /// Functions
 ////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * Initialize (configure) ports. Configures all pins on all ports
+ */
 void ports_init(void);

@@ -60,7 +60,7 @@ void timers_init(void){
 
 inline void timers_bbi2c_delay(void){
     // TA0 counts at 1MHz = TimerFreq
-    // I2CDataRate (100kHz to 800kHz generally)
+    // I2CDataRate (100kHz is normal mode)
     // I2CDataRate = TimerFreq / (2 * period)
     // Configured for 100kHz
     const uint16_t period = 5;

@@ -1,3 +1,7 @@
+/**
+ * @file system.c
+ * @author Marcus Behel (mgbehel@ncsu.edu)
+ */
 
 #include <system.h>
 #include <msp430.h>

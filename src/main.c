@@ -1,3 +1,8 @@
+/**
+ * @file main.c
+ * @brief Program entry point, main tree, and ISRs
+ * @author Marcus Behel (mgbehel@ncsu.edu)
+ */
 
 #include <msp430.h>
 #include <g2553support.h>
@@ -23,7 +28,7 @@ int main(void){
     system_init();              // System initialization (clocks)
     ports_init();               // Ports initialization & config
     timers_init();              // Timer initialization
-    // bbi2c_init();            // Initialize SW I2C subsystem
+    bbi2c_init();               // Initialize SW I2C subsystem
     // aht10_init();            // Initialize & configure AHT10 sensor
 
     while(true){
@@ -39,7 +44,7 @@ int main(void){
 #pragma vector=TIMER_A0_CCR0_VECTOR
 __interrupt void isr_timera0_ccr0(void){
     // CCR0: bbi2c timing
-    // Nothing to do in ISR
+    // Nothing to do in ISR, but don't use this CCR for other things
 }
 
 #pragma vector=TIMER_A0_CCRN_VECTOR

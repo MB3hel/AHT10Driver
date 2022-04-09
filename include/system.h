@@ -1,3 +1,10 @@
+/**
+ * @file system.h
+ * @brief System configuration and control functions / macros
+ * @author Marcus Behel (mgbehel@ncsu.edu)
+ * @version 1.0.0
+ */
+
 #pragma once
 
 #include <msp430.h>
@@ -21,4 +28,8 @@
 /// Functions
 ////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * System level initialization. Initialize / configure things that affect other
+ * subsystems such as clocks.
+ */
 void system_init(void);

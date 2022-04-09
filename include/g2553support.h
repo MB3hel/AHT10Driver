@@ -1,7 +1,11 @@
+/**
+ * @file g2553support.h
+ * @brief Macro definitions to help with code readability for the MSP430G2553
+ * @author Marcus Behel (mgbehel@ncsu.edu)
+ * @version 1.0.0
+ */
 
-#ifndef INCLUDE_G2553SUPPORT_H_
-#define INCLUDE_G2553SUPPORT_H_
-
+#pragma once
 
 #if defined (__MSP430G2553__)
 
@@ -9,7 +13,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// More readable names for the timer settings. Some newer MSP430's headers
 /// include macros defined this way by default, but older ones do not always.
-/// The specific meaning of each numbered source is determined from the datasheet
+/// The specific meaning of each numbered source is determined from datasheet
 ////////////////////////////////////////////////////////////////////////////////
 
 // Timer clock sources
@@ -54,6 +58,3 @@
 #define TIMER_A1_CCRN_VECTOR    TIMER1_A1_VECTOR    // For CCR1, 2, ..., and OF
 
 #endif
-
-
-#endif /* INCLUDE_G2553SUPPORT_H_ */

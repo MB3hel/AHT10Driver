@@ -1,8 +1,15 @@
+/**
+ * @file ports.c
+ * @author Marcus Behel (mgbehel@ncsu.edu)
+ */
 
 #include <ports.h>
 #include <msp430.h>
 
 
+/**
+ * Configure all pins on port 1
+ */
 void ports_init1(void){
     // Start with known initial state
     // All pins GPIO mode, configured as inputs with no resistors or interrupts
@@ -17,6 +24,9 @@ void ports_init1(void){
     ADC10AE0 = 0x00;
 }
 
+/**
+ * Configures all pins on port 2
+ */
 void ports_init2(void){
     // Start with known initial state
     // All pins GPIO mode, configured as inputs with no resistors or interrupts
