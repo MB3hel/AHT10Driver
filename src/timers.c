@@ -10,12 +10,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 void timers_init_a0(void){
-    TA0CTL = TASSEL__SMCLK;         // Derive timer clock from SMCLK = 4MHz
+    TA0CTL = TASSEL__SMCLK;         // Derive timer clock from SMCLK = 1MHz
     TA0CTL |= TACLR;                // Reset timer configuration
     TA0CTL |= MC__CONTINUOUS;       // Timer in continuous mode
-    TA0CTL |= ID__4;                // Divide timer clock by 4 = 1MHz
+    TA0CTL |= ID__1;                // Divide timer clock by 1 = 1MHz
 
-    // CCR0 used for BBI2C timings
+    // Unused
     TA0CCTL0 &= ~CCIFG;             // Clear CCR0 IFG
     TA0CCTL0 &= ~CCIE;              // Disable CCR0 interrupt
 
@@ -32,22 +32,25 @@ void timers_init_a0(void){
 }
 
 void timers_init_a1(void){
-    TA1CTL = TASSEL__SMCLK;         // Derive timer clock from SMCLK = 4MHz
+    TA1CTL = TASSEL__SMCLK;         // Derive timer clock from SMCLK = 1MHz
     TA1CTL |= TACLR;                // Reset timer configuration
     TA1CTL |= MC__CONTINUOUS;       // Timer in continuous mode
-    TA1CTL |= ID__4;                // Divide timer clock by 4 = 1MHz
+    TA1CTL |= ID__8;                // Divide timer clock by 8 = 125kHz
 
-    // Unused
+    // Used for 10ms timing
     TA1CCTL0 &= ~CCIFG;             // Clear CCR0 IFG
-    TA1CCTL0 &= ~CCIE;              // Disable CCR0 interrupt
+    TA1CCR0 = TA1CCR0_OFFSET;       // Set initial interrupt count
+    TA1CCTL0 |= CCIE;               // Enable CCR0 interrupt
 
-    // Unused
+    // Used for 100ms timing
     TA1CCTL1 &= ~CCIFG;             // Clear CCR1 IFG
-    TA1CCTL1 &= ~CCIE;              // Disable CCR1 interrupt
+    TA1CCR1 = TA1CCR1_OFFSET;       // Set initial interrupt count
+    TA1CCTL1 |= CCIE;               // Enable CCR1 interrupt
 
-    // Unused
+    // Used for 500ms timing
     TA1CCTL2 &= ~CCIFG;             // Clear CCR2 IFG
-    TA1CCTL2 &= ~CCIE;              // Disable CCR2 interrupt
+    TA1CCR2 = TA1CCR2_OFFSET;       // Set initial interrupt count
+    TA1CCTL2 |= CCIE;               // Enable CCR2 interrupt
 
     TA1CTL &= ~TAIFG;               // Clear overflow IFG
     TA1CTL &= ~TAIE;                // Disable overflow interrupt
@@ -57,19 +60,3 @@ void timers_init(void){
     timers_init_a0();
     timers_init_a1();
 }
-
-inline void timers_bbi2c_delay(void){
-    // TA0 counts at 1MHz = TimerFreq
-    // I2CDataRate (100kHz is normal mode)
-    // I2CDataRate = TimerFreq / (2 * period)
-    // Configured for 100kHz
-    const uint16_t period = 5;
-
-    TA0CCTL0 &= ~CCIFG;             // Clear CCR0 IFG
-    TA0CCR0 = TA0R + period;        // Set time of next interrupt
-    TA0CCTL0 |= CCIE;               // Enable CCR0 interrupt
-
-    // Wait until interrupt flag set to continue
-    while(!(TA0CCTL0 & CCIFG));
-}
-

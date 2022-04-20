@@ -26,13 +26,13 @@
 #define MC__STOP                MC_0
 #define MC__UP                  MC_1
 #define MC__CONTINUOUS          MC_2
-#define MC_UPDOWN               MC_3
+#define MC__UPDOWN               MC_3
 
 // Input divider settings
 #define ID__1                   ID_0
 #define ID__2                   ID_1
 #define ID__4                   ID_2
-#define ID__8                   ID_8
+#define ID__8                   ID_3
 
 // Bits in the interrupt vector
 #define TAIV__NONE              0x00

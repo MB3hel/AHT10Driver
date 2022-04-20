@@ -22,6 +22,18 @@ void ports_init1(void){
     P1IES  = 0x00;
     P1OUT  = 0x00;
     ADC10AE0 = 0x00;
+
+    P1SEL &= ~GRN_LED;      // GPIO mode
+    P1SEL2 &= ~GRN_LED;     // GPIO mode
+    P1DIR |= GRN_LED;       // Output direction
+    P1IE &= ~GRN_LED;       // Disable interrupt
+    P1OUT &= ~GRN_LED;      // Initially low
+
+    P1SEL &= ~RED_LED;      // GPIO mode
+    P1SEL2 &= ~RED_LED;     // GPIO mode
+    P1DIR |= RED_LED;       // Output direction
+    P1IE &= ~RED_LED;       // Disable interrupt
+    P1OUT &= ~RED_LED;      // Initially low
 }
 
 /**
