@@ -8,234 +8,194 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <timers.h>
 #include <ports.h>
+#include <timers.h>
 
-////////////////////////////////////////////////////////////////////////////////
-/// Globals
-////////////////////////////////////////////////////////////////////////////////
 
-// bbi2c_callback(unsigned int operation, unsigned int result)
-void (*bbi2c_callback)(unsigned int, unsigned int) = NULL;
-
-unsigned int bbi2c_operation = BBI2C_OPERATION_IDLE;
-unsigned int bbi2c_state = 0;
-uint8_t bbi2c_address;
-uint8_t bbi2c_tx_buf;
-uint8_t bbi2c_bitcount;
+// Note: __no_operation() does nothing, but has a purpose
+//       It is a function that is called, causing a small delay
+//       This is used to ensure SDA or SCL changes first
 
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-void bbi2c_init(void (*cb)(unsigned int, unsigned int)){
-    bbi2c_callback = cb;
-    bbi2c_operation = BBI2C_OPERATION_IDLE;
-    bbi2c_state = 0;
+void bbi2c_write_byte(uint8_t data){
+    unsigned int i;
+    for(i = 8; i > 0; --i){
+        // Set SDA line
+        if(data & BIT7)
+            PORTS_SDA_HIGH;
+        else
+            PORTS_SDA_LOW;
+        __no_operation();
+
+        // Generate rising clock edge
+        PORTS_SCL_HIGH;
+        timers_bbi2c_delay();
+
+        // Move to next bit (and next clock cycle)
+        data <<= 1;
+        PORTS_SCL_LOW;
+        timers_bbi2c_delay();
+    }
+}
+
+uint8_t bbi2c_read_byte(void){
+    uint8_t data = 0;
+    unsigned int i;
+    for(i = 8; i > 0; --i){
+        // Shift data
+        data <<= 1;
+
+        // Next clock cycle
+        PORTS_SCL_HIGH;
+        timers_bbi2c_delay();
+
+        // Read data line
+        if(PORTS_SDA_READ)
+            data |= 0x01;
+
+        // Next clock cycel
+        PORTS_SCL_LOW;
+        timers_bbi2c_delay();
+    }
+    return data;
+}
+
+bool bbi2c_write(bbi2c_transaction *trans){
+    unsigned int i = 0;
+    bool sendStop;
+
+    // Start configuration
+    PORTS_SDA_LOW;
+    __no_operation();
+    PORTS_SCL_LOW;
+
+    // Send control byte
+    bbi2c_write_byte(trans->address << 1);
+
+    // Check for ACK
+    PORTS_SDA_HIGH;
+    PORTS_SCL_HIGH;
+    while(!PORTS_SCL_READ);     // In case slave is clock stretching
+    timers_bbi2c_delay();
+
+    if(!PORTS_SDA_READ){
+        // SDA low = ACK. Can continue transmitting
+
+        // Cannot change SDA until SCL low for a cycle
+        PORTS_SCL_LOW;
+        timers_bbi2c_delay();
+
+        for(i = 0; i < trans->write_count; ++i){
+            bbi2c_write_byte(trans->write_buf[i]);
+
+            // Check for ACK
+            PORTS_SDA_HIGH;
+            PORTS_SCL_HIGH;
+            while(!PORTS_SCL_READ);     // In case slave is clock stretching
+            timers_bbi2c_delay();
+
+            if(PORTS_SDA_READ){
+                // SDA high = NACK. Stop transmitting
+                break;
+            }
+
+            PORTS_SCL_LOW;
+            timers_bbi2c_delay();
+        }
+    }
+
+    // Send stop if necessary
+    sendStop = !(trans->repeated_start && trans->read_count > 0);
+    if((sendStop && i == trans->write_count) || (i != trans->write_count)){
+        PORTS_SCL_LOW;
+        timers_bbi2c_delay();
+        PORTS_SDA_LOW;
+        timers_bbi2c_delay();
+        PORTS_SCL_HIGH;
+        __no_operation();
+        PORTS_SDA_HIGH;
+    }else{
+        PORTS_SCL_HIGH;
+        PORTS_SDA_HIGH;
+    }
+
+    return (i == trans->write_count);
+}
+
+bool bbi2c_read(bbi2c_transaction *trans){
+    unsigned int i = 0;
+
+    // Send start
+    PORTS_SDA_LOW;
+    __no_operation();
+    PORTS_SCL_LOW;
+    timers_bbi2c_delay();
+
+    // Send control byte
+    bbi2c_write_byte((trans->address << 1) | BIT0);
+
+    // Check for ACK
+    PORTS_SDA_HIGH;
+    PORTS_SCL_HIGH;
+    timers_bbi2c_delay();
+
+    if(!PORTS_SDA_READ){
+        // SDA low = ACK. Can continue reading
+
+        // Read all requested bytes
+        for(i = 0; i < trans->write_count; ++i){
+            while(!PORTS_SCL_READ);     // In case slave is clock stretching
+
+            // Another clock cycle
+            PORTS_SCL_LOW;
+            timers_bbi2c_delay();
+            PORTS_SDA_HIGH;
+
+            trans->read_buf[i] = bbi2c_read_byte();
+
+            // Send ACK
+            if(i == trans->read_count - 1)
+                PORTS_SDA_HIGH;
+            else
+                PORTS_SDA_LOW;
+            __no_operation();
+            PORTS_SCL_HIGH;
+
+            while(!PORTS_SCL_READ);     // In case slave is clock stretching
+            timers_bbi2c_delay();
+        }
+    }
+
+    // Cleanup
+    PORTS_SCL_LOW;
+    PORTS_SDA_LOW;
+    timers_bbi2c_delay();
+
+    PORTS_SCL_HIGH;
+    __no_operation();
+    PORTS_SDA_HIGH;
+    timers_bbi2c_delay();
+
+    return i == trans->read_count;
+}
+
+void bbi2c_init(void){
     PORTS_SDA_HIGH;
     PORTS_SCL_HIGH;
 }
 
-void bbi2c_start(uint8_t address){
-    bbi2c_address = address;
-    bbi2c_state = 0;
-    bbi2c_operation = BBI2C_OPERATION_START;
-    bbi2c_next();
-}
-
-void bbi2c_write(uint8_t data){
-    bbi2c_tx_buf = data;
-    bbi2c_state = 0;
-    bbi2c_operation = BBI2C_OPERATION_WRITE;
-    bbi2c_next();
-}
-
-void bbi2c_stop(void){
-    bbi2c_state = 0;
-    bbi2c_operation = BBI2C_OPERATION_STOP;
-    bbi2c_next();
-}
-
-
-/**
- * Start condition state machine
- * @return BBI2C_STATUS_DONE, BBI2C_STATUS_BUSY, BBI2C_STATUS_FAIL
- */
-unsigned int bbi2c_start_next(void){
-    switch(bbi2c_state){
-    case 0:
-        // Start condition
-        bbi2c_bitcount = 7;
-        bbi2c_tx_buf = (bbi2c_address << 1);
-        PORTS_SDA_LOW;
-        PORTS_SCL_LOW;
-        bbi2c_state = 1;
-        break;
-    case 1:
-        // Transmit next bit
-        if(bbi2c_tx_buf & BIT7)
-            PORTS_SDA_HIGH;
-        else
-            PORTS_SDA_LOW;
-        PORTS_SCL_HIGH;
-        bbi2c_state = 2;
-        break;
-    case 2:
-        // Increment to next bit
-        bbi2c_tx_buf <<= 1;
-        bbi2c_bitcount--;
-        PORTS_SCL_LOW;
-        if(bbi2c_bitcount > 0)
-            bbi2c_state = 1;
-        else
-            bbi2c_state = 3;
-        break;
-    case 3:
-        // Pull both lines high and wait for ACK
-        PORTS_SDA_HIGH;
-        PORTS_SCL_HIGH;
-        while(!PORTS_SCL_READ);     // Wait for potential clock stretching
-        bbi2c_state = 4;
-        break;
-    case 4:
-        if(PORTS_SDA_READ){
-            // Still high = NACK
-            bbi2c_state = 6;
-        }
-        PORTS_SCL_LOW;
-        bbi2c_state = 5;
-        break;
-    case 5:
-        return BBI2C_STATUS_DONE;
-    case 6:
-        PORTS_SCL_LOW;
-        bbi2c_state = 7;
-        break;
-    case 7:
-        PORTS_SDA_LOW;
-        bbi2c_state = 8;
-        break;
-    case 8:
-        PORTS_SCL_HIGH;
-        PORTS_SDA_HIGH;
-        return BBI2C_STATUS_FAIL;
+bool bbi2c_perform(bbi2c_transaction *trans){
+    if(trans->write_count > 0){
+        if(!bbi2c_write(trans))
+            return false;
     }
-    return BBI2C_STATUS_BUSY;
-}
-
-/**
- * Stop condition state machine
- * @return BBI2C_STATUS_DONE, BBI2C_STATUS_BUSY, BBI2C_STATUS_FAIL
- */
-unsigned int bbi2c_stop_next(void){
-    switch(bbi2c_state){
-    case 0:
-        // Make sure SCL low before SDA transitions to low
-        PORTS_SCL_LOW;
-        bbi2c_state = 1;
-        break;
-    case 1:
-        // Transition SDA to low
-        PORTS_SDA_LOW;
-        bbi2c_state = 2;
-        break;
-    case 2:
-        // Raise  SDA while SCL high = stop condition
-        PORTS_SCL_HIGH;
-        PORTS_SDA_HIGH;
-        return BBI2C_STATUS_DONE;
+    if(trans->read_count > 0){
+        if(!bbi2c_read(trans))
+            return false;
     }
-    return BBI2C_STATUS_BUSY;
-}
-
-/**
- * Transmit byte state machine
- * @return BBI2C_STATUS_DONE, BBI2C_STATUS_BUSY, BBI2C_STATUS_FAIL
- */
-unsigned int bbi2c_write_next(void){
-    switch(bbi2c_state){
-    case 0:
-        bbi2c_bitcount = 7;
-        bbi2c_tx_buf = bbi2c_address;
-        bbi2c_state = 1;
-        // Case fallthrough intentional
-    case 1:
-        // Set bit on SDA
-        if(bbi2c_tx_buf & BIT7)
-            PORTS_SDA_HIGH;
-        else
-            PORTS_SDA_LOW;
-        PORTS_SCL_HIGH;
-        bbi2c_state = 2;
-        break;
-    case 2:
-        // Move to next bit
-        bbi2c_tx_buf <<= 1;
-        bbi2c_bitcount--;
-        PORTS_SCL_LOW;
-        bbi2c_state = 3;
-        break;
-    case 3:
-        // Continue to next bit or finish
-        if(bbi2c_bitcount > 0)
-            bbi2c_state = 1;
-        else
-            bbi2c_state = 4;
-        break;
-    case 4:
-        // Prep to detect NACK
-        PORTS_SDA_HIGH;
-        PORTS_SCL_HIGH;
-        while(!PORTS_SCL_READ);     // In case slave is clock stretching
-        bbi2c_state = 5;
-        break;
-    case 5:
-        if(PORTS_SDA_READ){
-            // Still high = NACK
-            return BBI2C_STATUS_FAIL;
-        }
-        PORTS_SCL_LOW;
-        bbi2c_state = 6;
-        break;
-    case 6:
-        return BBI2C_STATUS_DONE;
-    }
-    return BBI2C_STATUS_BUSY;
-}
-
-void bbi2c_next(void){
-    unsigned int result;
-
-    switch(bbi2c_operation){
-    case BBI2C_OPERATION_START:
-        result = bbi2c_start_next();
-        if(result != BBI2C_STATUS_BUSY){
-            bbi2c_operation = BBI2C_OPERATION_IDLE;
-            if(bbi2c_callback != NULL)
-                bbi2c_callback(BBI2C_OPERATION_START, result);
-        }
-        break;
-
-    case BBI2C_OPERATION_WRITE:
-        result = bbi2c_write_next();
-        if(result != BBI2C_STATUS_BUSY){
-            bbi2c_operation = BBI2C_OPERATION_IDLE;
-            if(bbi2c_callback != NULL)
-                bbi2c_callback(BBI2C_OPERATION_WRITE, result);
-        }
-        break;
-
-    case BBI2C_OPERATION_STOP:
-        result = bbi2c_stop_next();
-        if(result != BBI2C_STATUS_BUSY){
-            bbi2c_operation = BBI2C_OPERATION_IDLE;
-            if(bbi2c_callback != NULL)
-                bbi2c_callback(BBI2C_OPERATION_STOP, result);
-        }
-        break;
-    }
-
-    if(bbi2c_operation != BBI2C_OPERATION_IDLE)
-        timers_bbi2c_delay();
+    return true;
 }

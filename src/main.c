@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include <system.h>
 #include <ports.h>
@@ -20,6 +21,9 @@
 /// Other globals
 ////////////////////////////////////////////////////////////////////////////////
 unsigned int counter_500ms = 0;
+bbi2c_transaction i2c_trans;
+uint8_t i2c_write[1];
+unsigned int i2c_write_count = 1;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -43,26 +47,30 @@ uint8_t flags = 0;
 /// Program Entry Point
 ////////////////////////////////////////////////////////////////////////////////
 
-void i2c_callback(unsigned int operation, unsigned int result){
-    if(result == BBI2C_STATUS_FAIL){
-        RED_LED_OFF;
-        return;
-    }
-}
-
 int main(void){
     DISABLE_WDT;                        // Disable watchdog timer
     ENABLE_INTERRUPTS;                  // Enable interrupts (global)
     system_init();                      // System initialization (clocks)
     ports_init();                       // Ports initialization & config
     timers_init();                      // Timer initialization
-    bbi2c_init(&i2c_callback);          // Initialize SW I2C
+    bbi2c_init();                       // Initialize SW I2C
 
     __delay_cycles(8e6);
 
-    bbi2c_start(4);
 
-    RED_LED_ON;
+    GRN_LED_ON;
+
+    i2c_write[0] = 'A';
+    i2c_trans.address = 4;
+    i2c_trans.write_buf = i2c_write;
+    i2c_trans.write_count = i2c_write_count;
+    i2c_trans.read_buf = NULL;
+    i2c_trans.read_count = 0;
+    i2c_trans.repeated_start = false;
+
+    bbi2c_perform(&i2c_trans);
+
+    while(true);
 
     /*while(true){
         if(CHECK_FLAG(TIMING_10MS)){
@@ -109,8 +117,7 @@ int main(void){
 
 #pragma vector=TIMER_A0_CCR0_VECTOR
 __interrupt void isr_timera0_ccr0(void){
-    // CCR0: bbi2c
-    bbi2c_next();
+    // CCR0: bbi2c; nothing to do in isr
 }
 
 #pragma vector=TIMER_A0_CCRN_VECTOR
