@@ -22,8 +22,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 unsigned int counter_500ms = 0;
 bbi2c_transaction i2c_trans;
-uint8_t i2c_write[1];
-unsigned int i2c_write_count = 1;
+uint8_t i2c_write[2];
+unsigned int i2c_write_count = 2;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,8 +59,10 @@ int main(void){
 
 
     GRN_LED_ON;
+    RED_LED_OFF;
 
-    i2c_write[0] = 'A';
+    i2c_write[0] = 'H';
+    i2c_write[1] = 'i';
     i2c_trans.address = 4;
     i2c_trans.write_buf = i2c_write;
     i2c_trans.write_count = i2c_write_count;
@@ -68,7 +70,9 @@ int main(void){
     i2c_trans.read_count = 0;
     i2c_trans.repeated_start = false;
 
-    bbi2c_perform(&i2c_trans);
+    if(!bbi2c_perform(&i2c_trans)){
+        RED_LED_ON;
+    }
 
     while(true);
 
