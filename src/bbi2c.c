@@ -22,6 +22,7 @@ unsigned int bbi2c_operation = BBI2C_OPERATION_IDLE;
 unsigned int bbi2c_state = 0;
 uint8_t bbi2c_address;
 uint8_t bbi2c_tx_buf;
+uint8_t bbi2c_bitcount;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,6 +33,8 @@ void bbi2c_init(void (*cb)(unsigned int, unsigned int)){
     bbi2c_callback = cb;
     bbi2c_operation = BBI2C_OPERATION_IDLE;
     bbi2c_state = 0;
+    PORTS_SDA_HIGH;
+    PORTS_SCL_HIGH;
 }
 
 void bbi2c_start(uint8_t address){
@@ -60,18 +63,18 @@ void bbi2c_stop(void){
  * @return BBI2C_STATUS_DONE, BBI2C_STATUS_BUSY, BBI2C_STATUS_FAIL
  */
 unsigned int bbi2c_start_next(void){
-    uint8_t addr = (bbi2c_address << 1) | BIT0;
-    uint8_t bits = 8;
     switch(bbi2c_state){
     case 0:
         // Start condition
+        bbi2c_bitcount = 7;
+        bbi2c_tx_buf = (bbi2c_address << 1);
         PORTS_SDA_LOW;
         PORTS_SCL_LOW;
         bbi2c_state = 1;
         break;
     case 1:
         // Transmit next bit
-        if(addr & BIT7)
+        if(bbi2c_tx_buf & BIT7)
             PORTS_SDA_HIGH;
         else
             PORTS_SDA_LOW;
@@ -80,10 +83,10 @@ unsigned int bbi2c_start_next(void){
         break;
     case 2:
         // Increment to next bit
-        addr <<= 1;
-        bits--;
+        bbi2c_tx_buf <<= 1;
+        bbi2c_bitcount--;
         PORTS_SCL_LOW;
-        if(bits > 0)
+        if(bbi2c_bitcount > 0)
             bbi2c_state = 1;
         else
             bbi2c_state = 3;
@@ -98,13 +101,25 @@ unsigned int bbi2c_start_next(void){
     case 4:
         if(PORTS_SDA_READ){
             // Still high = NACK
-            return BBI2C_STATUS_FAIL;
+            bbi2c_state = 6;
         }
         PORTS_SCL_LOW;
         bbi2c_state = 5;
         break;
     case 5:
         return BBI2C_STATUS_DONE;
+    case 6:
+        PORTS_SCL_LOW;
+        bbi2c_state = 7;
+        break;
+    case 7:
+        PORTS_SDA_LOW;
+        bbi2c_state = 8;
+        break;
+    case 8:
+        PORTS_SCL_HIGH;
+        PORTS_SDA_HIGH;
+        return BBI2C_STATUS_FAIL;
     }
     return BBI2C_STATUS_BUSY;
 }
@@ -139,47 +154,51 @@ unsigned int bbi2c_stop_next(void){
  * @return BBI2C_STATUS_DONE, BBI2C_STATUS_BUSY, BBI2C_STATUS_FAIL
  */
 unsigned int bbi2c_write_next(void){
-    uint8_t bits = 8;
     switch(bbi2c_state){
     case 0:
+        bbi2c_bitcount = 7;
+        bbi2c_tx_buf = bbi2c_address;
+        bbi2c_state = 1;
+        // Case fallthrough intentional
+    case 1:
         // Set bit on SDA
         if(bbi2c_tx_buf & BIT7)
             PORTS_SDA_HIGH;
         else
             PORTS_SDA_LOW;
         PORTS_SCL_HIGH;
-        bbi2c_state = 1;
-        break;
-    case 1:
-        // Move to next bit
-        bbi2c_tx_buf <<= 1;
-        bits--;
-        PORTS_SCL_LOW;
         bbi2c_state = 2;
         break;
     case 2:
-        // Continue to next bit or finish
-        if(bits > 0)
-            bbi2c_state = 0;
-        else
-            bbi2c_state = 3;
+        // Move to next bit
+        bbi2c_tx_buf <<= 1;
+        bbi2c_bitcount--;
+        PORTS_SCL_LOW;
+        bbi2c_state = 3;
         break;
     case 3:
+        // Continue to next bit or finish
+        if(bbi2c_bitcount > 0)
+            bbi2c_state = 1;
+        else
+            bbi2c_state = 4;
+        break;
+    case 4:
         // Prep to detect NACK
         PORTS_SDA_HIGH;
         PORTS_SCL_HIGH;
         while(!PORTS_SCL_READ);     // In case slave is clock stretching
-        bbi2c_state = 4;
+        bbi2c_state = 5;
         break;
-    case 4:
+    case 5:
         if(PORTS_SDA_READ){
             // Still high = NACK
             return BBI2C_STATUS_FAIL;
         }
         PORTS_SCL_LOW;
-        bbi2c_state = 5;
+        bbi2c_state = 6;
         break;
-    case 5:
+    case 6:
         return BBI2C_STATUS_DONE;
     }
     return BBI2C_STATUS_BUSY;
@@ -216,4 +235,7 @@ void bbi2c_next(void){
         }
         break;
     }
+
+    if(bbi2c_operation != BBI2C_OPERATION_IDLE)
+        timers_bbi2c_delay();
 }

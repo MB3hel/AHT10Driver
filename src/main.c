@@ -44,20 +44,8 @@ uint8_t flags = 0;
 ////////////////////////////////////////////////////////////////////////////////
 
 void i2c_callback(unsigned int operation, unsigned int result){
-    if(operation == BBI2C_OPERATION_STOP){
-        // TOOD: Indicate done
-        return;
-    }
     if(result == BBI2C_STATUS_FAIL){
-        bbi2c_stop();
-        return;
-    }
-    if(operation == BBI2C_OPERATION_START){
-        bbi2c_write('A');
-        return;
-    }
-    if(operation == BBI2C_OPERATION_WRITE){
-        bbi2c_stop();
+        RED_LED_OFF;
         return;
     }
 }
@@ -69,6 +57,12 @@ int main(void){
     ports_init();                       // Ports initialization & config
     timers_init();                      // Timer initialization
     bbi2c_init(&i2c_callback);          // Initialize SW I2C
+
+    __delay_cycles(8e6);
+
+    bbi2c_start(4);
+
+    RED_LED_ON;
 
     /*while(true){
         if(CHECK_FLAG(TIMING_10MS)){
