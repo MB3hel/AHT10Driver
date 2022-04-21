@@ -13,12 +13,14 @@
 #include <system.h>
 #include <ports.h>
 #include <timers.h>
+#include <bbi2c.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Other globals
 ////////////////////////////////////////////////////////////////////////////////
 unsigned int counter_500ms = 0;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Flags from interrupt service routines
@@ -41,14 +43,34 @@ uint8_t flags = 0;
 /// Program Entry Point
 ////////////////////////////////////////////////////////////////////////////////
 
+void i2c_callback(unsigned int operation, unsigned int result){
+    if(operation == BBI2C_OPERATION_STOP){
+        // TOOD: Indicate done
+        return;
+    }
+    if(result == BBI2C_STATUS_FAIL){
+        bbi2c_stop();
+        return;
+    }
+    if(operation == BBI2C_OPERATION_START){
+        bbi2c_write('A');
+        return;
+    }
+    if(operation == BBI2C_OPERATION_WRITE){
+        bbi2c_stop();
+        return;
+    }
+}
+
 int main(void){
     DISABLE_WDT;                        // Disable watchdog timer
     ENABLE_INTERRUPTS;                  // Enable interrupts (global)
     system_init();                      // System initialization (clocks)
     ports_init();                       // Ports initialization & config
     timers_init();                      // Timer initialization
+    bbi2c_init(&i2c_callback);          // Initialize SW I2C
 
-    while(true){
+    /*while(true){
         if(CHECK_FLAG(TIMING_10MS)){
             CLEAR_FLAG(TIMING_10MS);
             // -----------------------------------------------------------------
@@ -81,7 +103,7 @@ int main(void){
             // No flags set. Enter LPM0. Interrupts will exit LPM0 when flag set
             LPM0;
         }
-    }
+    }*/
 }
 
 
@@ -93,7 +115,8 @@ int main(void){
 
 #pragma vector=TIMER_A0_CCR0_VECTOR
 __interrupt void isr_timera0_ccr0(void){
-    // CCR0: Unused
+    // CCR0: bbi2c
+    bbi2c_next();
 }
 
 #pragma vector=TIMER_A0_CCRN_VECTOR

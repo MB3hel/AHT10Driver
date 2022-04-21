@@ -25,3 +25,8 @@
  * Initialize & configure all timers
  */
 void timers_init(void);
+
+/**
+ * Delay for the configured time then transition to the next bbi2c state
+ */
+void timers_bbi2c_delay(void);

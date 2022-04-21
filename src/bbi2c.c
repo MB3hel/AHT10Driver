@@ -11,28 +11,14 @@
 #include <timers.h>
 #include <ports.h>
 
-
-////////////////////////////////////////////////////////////////////////////////
-/// Macros
-////////////////////////////////////////////////////////////////////////////////
-
-#define OPERATION_IDLE      0
-#define OPERATION_START     1
-#define OPERATION_WRITE     2
-#define OPERATION_READ      3
-#define OPERATION_STOP      4
-
-#define STATUS_FAIL         0
-#define STATUS_BUSY         1
-#define STATUS_DONE         2
-
-
 ////////////////////////////////////////////////////////////////////////////////
 /// Globals
 ////////////////////////////////////////////////////////////////////////////////
 
-void (*bbi2c_callback)(void) = NULL;
-unsigned int bbi2c_operation = OPERATION_IDLE;
+// bbi2c_callback(unsigned int operation, unsigned int result)
+void (*bbi2c_callback)(unsigned int, unsigned int) = NULL;
+
+unsigned int bbi2c_operation = BBI2C_OPERATION_IDLE;
 unsigned int bbi2c_state = 0;
 uint8_t bbi2c_address;
 uint8_t bbi2c_tx_buf;
@@ -42,36 +28,36 @@ uint8_t bbi2c_tx_buf;
 /// Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-/**
- * Send start condition
- */
+void bbi2c_init(void (*cb)(unsigned int, unsigned int)){
+    bbi2c_callback = cb;
+    bbi2c_operation = BBI2C_OPERATION_IDLE;
+    bbi2c_state = 0;
+}
+
 void bbi2c_start(uint8_t address){
     bbi2c_address = address;
     bbi2c_state = 0;
-    bbi2c_operation = OPERATION_START;
+    bbi2c_operation = BBI2C_OPERATION_START;
     bbi2c_next();
 }
 
-void bbi2c_write_byte(uint8_t data){
+void bbi2c_write(uint8_t data){
     bbi2c_tx_buf = data;
     bbi2c_state = 0;
-    bbi2c_operation = OPERATION_WRITE;
+    bbi2c_operation = BBI2C_OPERATION_WRITE;
     bbi2c_next();
 }
 
-/**
- * Send stop condition
- */
 void bbi2c_stop(void){
     bbi2c_state = 0;
-    bbi2c_operation = OPERATION_STOP;
+    bbi2c_operation = BBI2C_OPERATION_STOP;
     bbi2c_next();
 }
 
 
 /**
  * Start condition state machine
- * @return STATUS_DONE, STATUS_BUSY, STATUS_FAIL
+ * @return BBI2C_STATUS_DONE, BBI2C_STATUS_BUSY, BBI2C_STATUS_FAIL
  */
 unsigned int bbi2c_start_next(void){
     uint8_t addr = (bbi2c_address << 1) | BIT0;
@@ -112,20 +98,20 @@ unsigned int bbi2c_start_next(void){
     case 4:
         if(PORTS_SDA_READ){
             // Still high = NACK
-            return STATUS_FAIL;
+            return BBI2C_STATUS_FAIL;
         }
         PORTS_SCL_LOW;
         bbi2c_state = 5;
         break;
     case 5:
-        return STATUS_DONE;
+        return BBI2C_STATUS_DONE;
     }
-    return STATUS_BUSY;
+    return BBI2C_STATUS_BUSY;
 }
 
 /**
  * Stop condition state machine
- * @return STATUS_DONE, STATUS_BUSY, STATUS_FAIL
+ * @return BBI2C_STATUS_DONE, BBI2C_STATUS_BUSY, BBI2C_STATUS_FAIL
  */
 unsigned int bbi2c_stop_next(void){
     switch(bbi2c_state){
@@ -143,16 +129,16 @@ unsigned int bbi2c_stop_next(void){
         // Raise  SDA while SCL high = stop condition
         PORTS_SCL_HIGH;
         PORTS_SDA_HIGH;
-        return STATUS_DONE;
+        return BBI2C_STATUS_DONE;
     }
-    return STATUS_BUSY;
+    return BBI2C_STATUS_BUSY;
 }
 
 /**
  * Transmit byte state machine
- * @return STATUS_DONE, STATUS_BUSY, STATUS_FAIL
+ * @return BBI2C_STATUS_DONE, BBI2C_STATUS_BUSY, BBI2C_STATUS_FAIL
  */
-unsigned int bbi2c_tx_byte_next(void){
+unsigned int bbi2c_write_next(void){
     uint8_t bits = 8;
     switch(bbi2c_state){
     case 0:
@@ -188,26 +174,46 @@ unsigned int bbi2c_tx_byte_next(void){
     case 4:
         if(PORTS_SDA_READ){
             // Still high = NACK
-            return STATUS_FAIL;
+            return BBI2C_STATUS_FAIL;
         }
         PORTS_SCL_LOW;
         bbi2c_state = 5;
         break;
     case 5:
-        return STATUS_DONE;
+        return BBI2C_STATUS_DONE;
     }
-    return STATUS_BUSY;
+    return BBI2C_STATUS_BUSY;
 }
 
 void bbi2c_next(void){
+    unsigned int result;
+
     switch(bbi2c_operation){
-    case OPERATION_IDLE:
+    case BBI2C_OPERATION_START:
+        result = bbi2c_start_next();
+        if(result != BBI2C_STATUS_BUSY){
+            bbi2c_operation = BBI2C_OPERATION_IDLE;
+            if(bbi2c_callback != NULL)
+                bbi2c_callback(BBI2C_OPERATION_START, result);
+        }
         break;
-    case OPERATION_START:
+
+    case BBI2C_OPERATION_WRITE:
+        result = bbi2c_write_next();
+        if(result != BBI2C_STATUS_BUSY){
+            bbi2c_operation = BBI2C_OPERATION_IDLE;
+            if(bbi2c_callback != NULL)
+                bbi2c_callback(BBI2C_OPERATION_WRITE, result);
+        }
         break;
-    case OPERATION_WRITE:
-        break;
-    case OPERATION_STOP:
+
+    case BBI2C_OPERATION_STOP:
+        result = bbi2c_stop_next();
+        if(result != BBI2C_STATUS_BUSY){
+            bbi2c_operation = BBI2C_OPERATION_IDLE;
+            if(bbi2c_callback != NULL)
+                bbi2c_callback(BBI2C_OPERATION_STOP, result);
+        }
         break;
     }
 }

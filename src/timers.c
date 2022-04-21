@@ -15,9 +15,9 @@ void timers_init_a0(void){
     TA0CTL |= MC__CONTINUOUS;       // Timer in continuous mode
     TA0CTL |= ID__1;                // Divide timer clock by 1 = 1MHz
 
-    // Unused
+    // Used for bbi2c
     TA0CCTL0 &= ~CCIFG;             // Clear CCR0 IFG
-    TA0CCTL0 &= ~CCIE;              // Disable CCR0 interrupt
+    TA0CCTL0 &= ~CCIE;              // Disable CCR0 interrupt (for now)
 
     // Unused
     TA0CCTL1 &= ~CCIFG;             // Clear CCR1 IFG
@@ -59,4 +59,16 @@ void timers_init_a1(void){
 void timers_init(void){
     timers_init_a0();
     timers_init_a1();
+}
+
+void timers_bbi2c_delay(void){
+    // TA0 counts at 1MHz = TimerFreq
+    // I2CDataRate (100kHz is normal mode)
+    // I2CDataRate = TimerFreq / (2 * period)
+    // Configured for 100kHz
+    const uint16_t period = 5;
+
+    TA0CCTL0 &= ~CCIFG;             // Clear CCR0 IFG
+    TA0CCR0 = TA0R + period;        // Set time of next interrupt
+    TA0CCTL0 |= CCIE;               // Enable CCR0 interrupt
 }
