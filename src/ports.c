@@ -53,13 +53,13 @@ void ports_init2(void){
 
     P2SEL &= ~SCL;          // GPIO mode
     P2SEL2 &= ~SCL;         // GPIO mode
-    P2DIR |= SCL;           // Output direction
+    P2DIR |= SCL;           // Output direction (initially)
     P2IE &= ~SCL;           // Disable interrupt
-    P2OUT &= ~SCL;          // Initially low
+    P2OUT &= ~SCL;          // Output low
 
     P2SEL &= ~SDA;          // GPIO mode
     P2SEL2 &= ~SDA;         // GPIO mode
-    P2DIR |= SDA;           // Output direction
+    P2DIR |= SDA;           // Output direction (initially)
     P2IE &= ~SDA;           // Disable interrupt
     P2OUT &= ~SDA;          // Initially low
 }

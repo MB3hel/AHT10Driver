@@ -147,7 +147,7 @@ bool bbi2c_read(bbi2c_transaction *trans){
         // SDA low = ACK. Can continue reading
 
         // Read all requested bytes
-        for(i = 0; i < trans->write_count; ++i){
+        for(i = 0; i < trans->read_count; ++i){
             while(!PORTS_SCL_READ);     // In case slave is clock stretching
 
             // Another clock cycle
@@ -158,11 +158,7 @@ bool bbi2c_read(bbi2c_transaction *trans){
             trans->read_buf[i] = bbi2c_read_byte();
 
             // Send ACK
-            if(i == trans->read_count - 1)
-                PORTS_SDA_HIGH;
-            else
-                PORTS_SDA_LOW;
-            __no_operation();
+            PORTS_SDA_LOW;
             PORTS_SCL_HIGH;
 
             while(!PORTS_SCL_READ);     // In case slave is clock stretching
@@ -172,6 +168,7 @@ bool bbi2c_read(bbi2c_transaction *trans){
 
     // Cleanup
     PORTS_SCL_LOW;
+    timers_bbi2c_delay();
     PORTS_SDA_LOW;
     timers_bbi2c_delay();
 

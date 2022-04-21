@@ -22,8 +22,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 unsigned int counter_500ms = 0;
 bbi2c_transaction i2c_trans;
-uint8_t i2c_write[2];
-unsigned int i2c_write_count = 2;
+
+uint8_t aht10_address = 0x38;
+uint8_t aht10_reset[1] = {0xBA};
+uint8_t aht10_cal[3] = {0xE1, 0x08, 0x00};
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -61,20 +63,30 @@ int main(void){
     GRN_LED_ON;
     RED_LED_OFF;
 
-    i2c_write[0] = 'H';
-    i2c_write[1] = 'i';
-    i2c_trans.address = 4;
-    i2c_trans.write_buf = i2c_write;
-    i2c_trans.write_count = i2c_write_count;
-    i2c_trans.read_buf = NULL;
-    i2c_trans.read_count = 0;
+    // TODO: I2C stuff
+    i2c_trans.address = aht10_address;
     i2c_trans.repeated_start = false;
 
-    if(!bbi2c_perform(&i2c_trans)){
-        RED_LED_ON;
-    }
+    i2c_trans.write_buf = aht10_reset;
+    i2c_trans.write_count = 1;
+    i2c_trans.read_buf = NULL;
+    i2c_trans.read_count = 0;
+    bbi2c_perform(&i2c_trans);
 
-    while(true);
+    i2c_trans.write_buf = aht10_cal;
+    i2c_trans.write_count = 3;
+    bbi2c_perform(&i2c_trans);
+
+    uint8_t dest;
+    while(true){
+        i2c_trans.write_buf = NULL;
+        i2c_trans.write_count = 0;
+        i2c_trans.read_buf = &dest;
+        i2c_trans.read_count = 1;
+        bbi2c_perform(&i2c_trans);
+
+        __delay_cycles(1e6);
+    }
 
     /*while(true){
         if(CHECK_FLAG(TIMING_10MS)){

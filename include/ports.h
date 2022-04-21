@@ -34,13 +34,15 @@
 #define RED_LED_OFF             P1OUT &= ~RED_LED
 #define RED_LED_TOGGLE          P1OUT ^= RED_LED
 
-#define PORTS_SDA_LOW           P2OUT &= ~SDA
-#define PORTS_SDA_HIGH          P2OUT |= SDA
-#define PORTS_SDA_READ          P2IN & SDA
-
-#define PORTS_SCL_LOW           P2OUT &= ~SCL
-#define PORTS_SCL_HIGH          P2OUT |= SCL
-#define PORTS_SCL_READ          P2OUT & SCL
+// PxOUT is configured so pin is low in output mode
+// In input mode, external (I2C) pullups take over making the line high
+// Changing pin direction changes high vs low
+#define PORTS_SDA_LOW           P2DIR |= SDA
+#define PORTS_SDA_HIGH          P2DIR &= ~SDA
+#define PORTS_SDA_READ          (P2IN & SDA)
+#define PORTS_SCL_LOW           P2DIR |= SCL
+#define PORTS_SCL_HIGH          P2DIR &= ~SCL
+#define PORTS_SCL_READ          (P2IN & SCL)
 
 
 ////////////////////////////////////////////////////////////////////////////////
