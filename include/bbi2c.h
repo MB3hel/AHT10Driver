@@ -1,14 +1,6 @@
 /**
  * @file bbi2c.h
  * @brief Bitbanged (software) I2C (master only)
- * Implemented blocking (not as state machine)
- * State machine implementation would be of minimal use as maintaining correct
- * data rate would leave minimal time for non bbi2c tasks during transactions
- *
- * Based on TI example code https://www.ti.com/lit/an/slaa703a/slaa703a.pdf
- *
- * See ports.h for SDA and SCL configuration / control
- * See timers.h for timing and clock rate control
  *
  * @author Marcus Behel (mgbehel@ncsu.edu)
  * @version 1.0.0
@@ -38,6 +30,8 @@ typedef struct {
 /// Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-void bbi2c_init(void);
+void bbi2c_init(void (*cb)(bbi2c_transaction*, bool));
 
-bool bbi2c_perform(bbi2c_transaction *trans);
+void bbi2c_perform(bbi2c_transaction *trans);
+
+void bbi2c_next(void);

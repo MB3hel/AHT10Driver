@@ -70,6 +70,5 @@ void timers_bbi2c_delay(void){
 
     TA0CCTL0 &= ~CCIFG;             // Clear CCR0 IFG
     TA0CCR0 = TA0R + period;        // Set time of next interrupt
-
-    while(!(TACCTL0 & CCIFG));      // Wait for interrupt flag
+    TACCTL0 |= CCIE;                // Enable interrupt
 }

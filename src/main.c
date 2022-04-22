@@ -21,11 +21,6 @@
 /// Other globals
 ////////////////////////////////////////////////////////////////////////////////
 unsigned int counter_500ms = 0;
-bbi2c_transaction i2c_trans;
-
-uint8_t aht10_address = 0x38;
-uint8_t aht10_reset[1] = {0xBA};
-uint8_t aht10_cal[3] = {0xE1, 0x08, 0x00};
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -39,6 +34,7 @@ uint8_t flags = 0;
 #define TIMING_100MS        BIT1
 #define TIMING_500MS        BIT2
 #define TIMING_1S           BIT3
+#define I2C_DONE            BIT4
 
 #define SET_FLAG(x)         flags |= x
 #define CHECK_FLAG(x)       (flags & x)
@@ -49,13 +45,17 @@ uint8_t flags = 0;
 /// Program Entry Point
 ////////////////////////////////////////////////////////////////////////////////
 
+void i2c_callback(bbi2c_transaction *trans, bool success){
+    SET_FLAG(I2C_DONE);
+}
+
 int main(void){
     DISABLE_WDT;                        // Disable watchdog timer
     ENABLE_INTERRUPTS;                  // Enable interrupts (global)
     system_init();                      // System initialization (clocks)
     ports_init();                       // Ports initialization & config
     timers_init();                      // Timer initialization
-    bbi2c_init();                       // Initialize SW I2C
+    bbi2c_init(&i2c_callback);          // Initialize SW I2C
 
     __delay_cycles(8e6);
 
@@ -63,28 +63,18 @@ int main(void){
     GRN_LED_ON;
     RED_LED_OFF;
 
-    // TODO: I2C stuff
-    i2c_trans.address = aht10_address;
+    uint8_t aht10_command[3] = {0xE1, 0x08, 0x00};
+    bbi2c_transaction i2c_trans;
+
+    i2c_trans.address = 0x38;
+    i2c_trans.write_buf = aht10_command;
+    i2c_trans.write_count = 3;
+    i2c_trans.read_count = 0;
     i2c_trans.repeated_start = false;
 
-    i2c_trans.write_buf = aht10_reset;
-    i2c_trans.write_count = 1;
-    i2c_trans.read_buf = NULL;
-    i2c_trans.read_count = 0;
-    bbi2c_perform(&i2c_trans);
-
-    i2c_trans.write_buf = aht10_cal;
-    i2c_trans.write_count = 3;
-    bbi2c_perform(&i2c_trans);
-
-    uint8_t dest;
     while(true){
-        i2c_trans.write_buf = NULL;
-        i2c_trans.write_count = 0;
-        i2c_trans.read_buf = &dest;
-        i2c_trans.read_count = 1;
         bbi2c_perform(&i2c_trans);
-
+        while(!CHECK_FLAG(I2C_DONE));
         __delay_cycles(1e6);
     }
 
@@ -133,7 +123,9 @@ int main(void){
 
 #pragma vector=TIMER_A0_CCR0_VECTOR
 __interrupt void isr_timera0_ccr0(void){
-    // CCR0: bbi2c; nothing to do in isr
+    // CCR0: bbi2c timing
+    TA0CCTL0 &= ~CCIE;                  // Disable interrupt
+    bbi2c_next();                       // Move to next state
 }
 
 #pragma vector=TIMER_A0_CCRN_VECTOR
