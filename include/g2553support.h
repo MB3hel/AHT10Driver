@@ -9,6 +9,30 @@
 
 #if defined (__MSP430G2553__)
 
+////////////////////////////////////////////////////////////////////////////////
+/// More readable names for clock settings.
+////////////////////////////////////////////////////////////////////////////////
+
+// MCLK Source settings
+#define SELM__DCO               SELM_0
+#define SELM__XT2LXFT           SELM_2
+#define SELM__LFXT              SELM_3
+
+// MCLK Divider settings
+#define DIVM__1                 DIVM_0
+#define DIVM__2                 DIVM_1
+#define DIVM__4                 DIVM_2
+#define DIVM__8                 DIVM_3
+
+// SMCLK Source settings
+#define SELS__DCO               0x00
+#define SELS__XT2LXFT           SELS
+
+// SMCLK Divider settings
+#define DIVS__1                 DIVS_0
+#define DIVS__2                 DIVS_1
+#define DIVS__4                 DIVS_2
+#define DIVS__8                 DIVS_3
 
 ////////////////////////////////////////////////////////////////////////////////
 /// More readable names for the timer settings. Some newer MSP430's headers
@@ -26,7 +50,7 @@
 #define MC__STOP                MC_0
 #define MC__UP                  MC_1
 #define MC__CONTINUOUS          MC_2
-#define MC__UPDOWN               MC_3
+#define MC__UPDOWN              MC_3
 
 // Input divider settings
 #define ID__1                   ID_0
