@@ -48,6 +48,10 @@ volatile uint8_t flags = 0;
 
 void i2c_callback(bbi2c_transaction *trans, bool success){
     SET_FLAG(I2C_DONE);
+    if(!success)
+        RED_LED_ON;
+    else
+        RED_LED_OFF;
 }
 
 int main(void){

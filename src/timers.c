@@ -63,10 +63,10 @@ void timers_init(void){
 
 void timers_bbi2c_delay(void){
     // TA0 counts at 2MHz = TimerFreq (see timer steup above)
-    // I2CDataRate (100kHz is normal mode)
+    // I2CDataRate (up to 100kHz is normal mode)
     // I2CDataRate = TimerFreq / (2 * period)
-    // Configured for approx 100kHz
-    const uint16_t period = 10;
+    // Configured for approx 50kHz
+    const uint16_t period = 20;
 
     TA0CCTL0 &= ~CCIFG;             // Clear CCR0 IFG
     TA0CCR0 = TA0R + period;        // Set time of next interrupt

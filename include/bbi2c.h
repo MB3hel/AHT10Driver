@@ -2,6 +2,16 @@
  * @file bbi2c.h
  * @brief Bitbanged (software) I2C (master only)
  *
+ * Implemented using state machine.
+ *
+ * Data rate determined by timer configuration (see timers.h)
+ * Pins determined by port configuration (see ports.h)
+ *
+ * Depending on MCLK rate, achieving a high data rate may not be possible or may
+ * result in a rapid interrupt rate during the transaction effectively
+ * preventing the rest of the program from running. If the system clock rate is
+ * changed (see system.h) change the SMALL_DELAY macro in bbi2c.c
+ *
  * @author Marcus Behel (mgbehel@ncsu.edu)
  * @version 1.0.0
  */

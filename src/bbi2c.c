@@ -12,6 +12,8 @@
 #include <timers.h>
 
 // Should be approx 1 micro second
+// NumCycles = MCLKRateHz * DelaySec
+// NumCycles = 16e6 * 1e-6 = 16 cycles
 #define SMALL_DELAY __delay_cycles(16)
 
 ////////////////////////////////////////////////////////////////////////////////
