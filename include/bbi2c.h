@@ -40,7 +40,6 @@ typedef struct {
     unsigned int write_count;
     uint8_t *read_buf;
     unsigned int read_count;
-    bool repeated_start;
 } bbi2c_transaction;
 
 

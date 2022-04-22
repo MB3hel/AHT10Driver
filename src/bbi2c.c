@@ -125,7 +125,73 @@ void bbi2c_perform(bbi2c_transaction *trans){
  *     endif
  *
  *     if(trans->read_count > 0)
- *         // TODO: Implement this
+ *         // Start bit
+ *         SDA_LOW
+ *         small_delay()
+ *         SCL_LOW
+ *         delay()
+ *         pos = 0
+ *
+ *         // Control byte
+ *         data = (trans->address << 1) | BIT0
+ *         for(bit = 0; bit < 8; ++bit)
+ *             if(data & BIT7) SDA_HIGH
+ *             else SDA_LOW
+ *             small_delay()
+ *             SCL_HIGH
+ *             delay()
+ *             data <<= 1
+ *             SCL_LOW
+ *             delay()
+ *         endfor
+ *         SDA_HIGH
+ *         small_delay()
+ *         SCL_HIGH
+ *         while(!SCL_READ)
+ *         delay()
+ *         ack = !SDA_READ
+ *
+ *         // Read bytes
+ *         if(ack)
+ *             for(pos = 0; pos < trans->read_count; ++pos)
+ *                 while(!SCL_READ); // In case slave is clock stretching
+ *                 data = 0
+ *                 SCL_LOW
+ *                 delay()
+ *                 SDA_HIGH
+ *                 small_delay()
+ *                 for(bit = 0; bit < 8; ++bit)
+ *                     data <<= 1;
+ *                     SCL_HIGH
+ *                     delay()
+ *                     if(SDA_READ)
+ *                         data |= 0x01;
+ *                     endif
+ *                     SCL_LOW;
+ *                     delay();
+ *                 endfor
+ *                 trans->read_buf[pos] = data
+ *                 if(pos = trans->read_count - 1) SDA_HIGH;
+ *                 else SDA_LOW;
+ *                 small_delay()
+ *                 SCL_HIGH;
+ *                 while(!SCL_READ); // In case slave is clock stretching
+ *                 delay()
+ *             endfor
+ *         endif
+ *
+ *         // Stop bit
+ *         SCL_LOW;
+ *         small_delay()
+ *         SDA_LOW;
+ *         delay()
+ *         SCL_HIGH;
+ *         small_delay()
+ *         SDA_HIGH
+ *         delay()
+ *         if(pos != trans->read_count)
+ *             return false;    // Transaction failed
+ *         endif
  *     endif
  *
  *     return true;
@@ -251,10 +317,117 @@ unsigned int bbi2c_next(void){
     // -------------------------------------------------------------------------
     switch(bbi2c_state){
     case 50:
-        // TODO: Implement read portion of transaction
-        // For now, any read is "successful"
-        // If got here, write was successful
-        return BBI2C_DONE;
+        if(bbi2c_trans->read_count == 0){
+            // Nothing to read
+            return BBI2C_DONE;
+        }
+        // fallthrough
+
+    // Start bit
+    case 51:
+        PORTS_SDA_LOW;
+        SMALL_DELAY;
+        PORTS_SCL_LOW;
+        bbi2c_pos = 0;
+        bbi2c_state = 52;
+        break;
+
+    // Control byte
+    case 52:
+        bbi2c_buf = (bbi2c_trans->address << 1) | BIT0;
+        bbi2c_bits = 0;
+        // fallthrough
+    case 53:
+        if(bbi2c_buf & BIT7) PORTS_SDA_HIGH;
+        else PORTS_SDA_LOW;
+        SMALL_DELAY;
+        PORTS_SCL_HIGH;
+        bbi2c_state = 54;
+        break;
+    case 54:
+        bbi2c_buf <<= 1;
+        bbi2c_bits++;
+        if(bbi2c_bits < 8)
+            bbi2c_state = 53;
+        else
+            bbi2c_state = 55;
+        PORTS_SCL_LOW;
+        break;
+    case 55:
+        PORTS_SDA_HIGH;
+        SMALL_DELAY;
+        PORTS_SCL_HIGH;
+        while(!PORTS_SCL_READ); // In case slave is clock stretching
+        bbi2c_state = 56;
+        break;
+    case 56:
+        if(PORTS_SDA_READ){
+            // NACK: start stop sequence
+            PORTS_SCL_LOW;
+            SMALL_DELAY;
+            PORTS_SDA_LOW;
+            bbi2c_state = 63; // Go to second part of stop bit
+            break;
+        }
+        // ACK: Start transmit
+        bbi2c_pos = 0;
+        // fallthrough
+    case 57:
+        while(!PORTS_SCL_READ); // In case slave is clock stretching
+        bbi2c_buf = 0;
+        PORTS_SCL_LOW;
+        bbi2c_state = 58;
+        break;
+    case 58:
+        PORTS_SDA_HIGH;
+        SMALL_DELAY;
+        bbi2c_bits = 0;
+        // fallthrough
+    case 59:
+        bbi2c_buf <<= 1;
+        PORTS_SCL_HIGH;
+        bbi2c_state = 60;
+        break;
+    case 60:
+        if(PORTS_SDA_READ) bbi2c_buf |= 0x01;
+        PORTS_SCL_LOW;
+        bbi2c_bits++;
+        if(bbi2c_bits < 8)
+            bbi2c_state = 59;
+        else
+            bbi2c_state = 61;
+        break;
+    case 61:
+        bbi2c_trans->read_buf[bbi2c_pos] = bbi2c_buf;
+        if(bbi2c_pos = bbi2c_trans->read_count - 1) PORTS_SDA_HIGH;
+        else PORTS_SDA_LOW;
+        SMALL_DELAY;
+        PORTS_SCL_HIGH;
+        ++bbi2c_pos;
+        while(!PORTS_SCL_READ); // In case slave is clock stretching
+        if(bbi2c_pos < bbi2c_trans->read_count)
+            bbi2c_state = 57;
+        else
+            bbi2c_state = 62;
+        break;
+
+    // Stop bit
+    case 62:
+        PORTS_SCL_LOW;
+        SMALL_DELAY;
+        PORTS_SDA_LOW;
+        bbi2c_state = 63;
+        break;
+    case 63:
+        PORTS_SCL_HIGH;
+        SMALL_DELAY;
+        PORTS_SDA_HIGH;
+        bbi2c_state = 64;
+        break;
+    case 64:
+        if(bbi2c_pos == bbi2c_trans->read_count)
+            return BBI2C_DONE;
+        return BBI2C_FAIL;
     }
     // -------------------------------------------------------------------------
 

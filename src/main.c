@@ -63,12 +63,12 @@ int main(void){
 
     uint8_t aht10_command[3] = {0xE1, 0x08, 0x00};
     bbi2c_transaction i2c_trans;
+    uint8_t read_buf[1];
 
     i2c_trans.address = 0x38;
-    i2c_trans.write_buf = aht10_command;
-    i2c_trans.write_count = 3;
-    i2c_trans.read_count = 0;
-    i2c_trans.repeated_start = false;
+    i2c_trans.write_count = 0;
+    i2c_trans.read_buf = read_buf;
+    i2c_trans.read_count = 1;
 
 
     // -------------------------------------------------------------------------
@@ -80,11 +80,20 @@ int main(void){
     bbi2c_perform(&i2c_trans);
 
 
+    GRN_LED_ON;
+
+    while(true){
+        // bbi2c_perform(&i2c_trans);
+        while(!CHECK_FLAG(I2C_DONE));
+        CLEAR_FLAG(I2C_DONE);
+        __delay_cycles(1e6);
+    }
+
     // -------------------------------------------------------------------------
     // Main loop
     // -------------------------------------------------------------------------
 
-    while(true){
+    /*while(true){
         if(CHECK_FLAG(TIMING_10MS)){
             CLEAR_FLAG(TIMING_10MS);
             // -----------------------------------------------------------------
@@ -141,7 +150,7 @@ int main(void){
             // No flags set. Enter LPM0. Interrupts will exit LPM0 when flag set
             LPM0;
         }
-    }
+    }*/
 }
 
 
