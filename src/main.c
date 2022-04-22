@@ -77,25 +77,13 @@ int main(void){
 
     GRN_LED_OFF;
     RED_LED_OFF;
-
-    while(true){
-        bbi2c_perform(&i2c_trans);
-        while(!CHECK_FLAG(I2C_DONE));
-        CLEAR_FLAG(I2C_DONE);
-        if(CHECK_FLAG(I2C_FAIL)){
-            CLEAR_FLAG(I2C_FAIL);
-            RED_LED_ON;
-        }else{
-            RED_LED_OFF;
-        }
-        __delay_cycles(16e6);
-    }
+    bbi2c_perform(&i2c_trans);
 
     // -------------------------------------------------------------------------
     // Main loop
     // -------------------------------------------------------------------------
 
-    /*while(true){
+    while(true){
         if(CHECK_FLAG(TIMING_10MS)){
             CLEAR_FLAG(TIMING_10MS);
             // -----------------------------------------------------------------
@@ -152,7 +140,7 @@ int main(void){
             // No flags set. Enter LPM0. Interrupts will exit LPM0 when flag set
             LPM0;
         }
-    }*/
+    }
 }
 
 
@@ -172,11 +160,11 @@ __interrupt void isr_timera0_ccr0(void){
 
     if(res == BBI2C_DONE){
         SET_FLAG(I2C_DONE);             // Transaction done. Set flag.
-        LPM0_EXIT;                      // Flag needs handling; exit LPM0
+        //LPM0_EXIT;                      // Flag needs handling; exit LPM0
     }else if(res == BBI2C_FAIL){
         SET_FLAG(I2C_DONE);             // Transaction done. Set flag.
         SET_FLAG(I2C_FAIL);             // Transaction failed. Set flag.
-        LPM0_EXIT;                      // Flags need handling; exit LPM0
+        //LPM0_EXIT;                      // Flags need handling; exit LPM0
     }
 }
 

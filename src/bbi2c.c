@@ -332,14 +332,16 @@ unsigned int bbi2c_next(void){
     case 61:
         bbi2c_trans->read_buf[bbi2c_pos] = bbi2c_buf;
         ++bbi2c_pos;
-        if(bbi2c_pos == bbi2c_trans->read_count)
+        if(bbi2c_pos == bbi2c_trans->read_count){
             PORTS_SDA_HIGH;
-        else
+            bbi2c_state = 62;
+        }else{
             PORTS_SDA_LOW;
+            bbi2c_state = 57;
+        }
         SMALL_DELAY;
         PORTS_SCL_HIGH;
         while(!PORTS_SCL_READ); // In case slave is clock stretching
-        bbi2c_state = 62;
         break;
 
     // Stop bits
