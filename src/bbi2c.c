@@ -20,7 +20,6 @@
 /// Globals
 ////////////////////////////////////////////////////////////////////////////////
 
-void (*bbi2c_callback)(bbi2c_transaction*, bool);
 volatile unsigned int bbi2c_state;
 volatile unsigned int bbi2c_bits;
 volatile unsigned int bbi2c_pos;
@@ -32,8 +31,7 @@ bbi2c_transaction *bbi2c_trans;
 /// Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-void bbi2c_init(void (*cb)(bbi2c_transaction*, bool)){
-    bbi2c_callback = cb;
+void bbi2c_init(void){
     PORTS_SDA_HIGH;
     PORTS_SCL_HIGH;
 }
@@ -41,7 +39,9 @@ void bbi2c_init(void (*cb)(bbi2c_transaction*, bool)){
 void bbi2c_perform(bbi2c_transaction *trans){
     bbi2c_trans = trans;
     bbi2c_state = 0;
-    bbi2c_next();
+
+    // Don't call bbi2c_next directly. Only timer ISR should call it.
+    timers_bbi2c_delay();
 }
 
 /*
@@ -132,7 +132,7 @@ void bbi2c_perform(bbi2c_transaction *trans){
  * endfunction
  */
 
-void bbi2c_next(void){
+unsigned int bbi2c_next(void){
 
     // -------------------------------------------------------------------------
     // Write portion of transaction
@@ -239,8 +239,7 @@ void bbi2c_next(void){
         SMALL_DELAY;
         PORTS_SDA_HIGH;
         if(bbi2c_pos != bbi2c_trans->write_count){
-            bbi2c_callback(bbi2c_trans, false);
-            return;
+            return BBI2C_FAIL;
         }
         bbi2c_state = 50; // Move to read portion
         break;
@@ -255,12 +254,13 @@ void bbi2c_next(void){
         // TODO: Implement read portion of transaction
         // For now, any read is "successful"
         // If got here, write was successful
-        bbi2c_callback(bbi2c_trans, true);
-        return;
+        return BBI2C_DONE;
     }
     // -------------------------------------------------------------------------
 
 
     // Not done, so enable timer to move to next state
     timers_bbi2c_delay();
+
+    return BBI2C_BUSY;
 }

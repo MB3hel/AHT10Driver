@@ -21,6 +21,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+////////////////////////////////////////////////////////////////////////////////
+/// Macros
+////////////////////////////////////////////////////////////////////////////////
+
+#define BBI2C_FAIL  0       // Transaction failed
+#define BBI2C_DONE  1       // Transaction completed successfully
+#define BBI2C_BUSY  2       // Transaction in progress
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Typedefs
@@ -40,8 +48,8 @@ typedef struct {
 /// Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-void bbi2c_init(void (*cb)(bbi2c_transaction*, bool));
+void bbi2c_init(void);
 
 void bbi2c_perform(bbi2c_transaction *trans);
 
-void bbi2c_next(void);
+unsigned int bbi2c_next(void);
