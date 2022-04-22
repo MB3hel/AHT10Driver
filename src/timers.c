@@ -10,10 +10,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 void timers_init_a0(void){
-    TA0CTL = TASSEL__SMCLK;         // Derive timer clock from SMCLK = 1MHz
+    TA0CTL = TASSEL__SMCLK;         // Derive timer clock from SMCLK = 2MHz
     TA0CTL |= TACLR;                // Reset timer configuration
     TA0CTL |= MC__CONTINUOUS;       // Timer in continuous mode
-    TA0CTL |= ID__1;                // Divide timer clock by 1 = 1MHz
+    TA0CTL |= ID__2;                // Divide timer clock by 2 = 1MHz
 
     // Used for bbi2c
     TA0CCTL0 &= ~CCIFG;             // Clear CCR0 IFG
@@ -32,10 +32,10 @@ void timers_init_a0(void){
 }
 
 void timers_init_a1(void){
-    TA1CTL = TASSEL__SMCLK;         // Derive timer clock from SMCLK = 1MHz
+    TA1CTL = TASSEL__SMCLK;         // Derive timer clock from SMCLK = 2MHz
     TA1CTL |= TACLR;                // Reset timer configuration
     TA1CTL |= MC__CONTINUOUS;       // Timer in continuous mode
-    TA1CTL |= ID__8;                // Divide timer clock by 8 = 125kHz
+    TA1CTL |= ID__8;                // Divide timer clock by 8 = 250kHz
 
     // Used for 10ms timing
     TA1CCTL0 &= ~CCIFG;             // Clear CCR0 IFG
@@ -64,9 +64,9 @@ void timers_init(void){
 void timers_bbi2c_delay(void){
     // TA0 counts at 1MHz = TimerFreq
     // I2CDataRate (100kHz is normal mode)
-    // I2CDataRate = TimerFreq / (2 * period)
-    // Configured for 100kHz
-    const uint16_t period = 5;
+    // I2CDataRate = TimerFreq / (4 * period)
+    // Configured for approx 100kHz
+    const uint16_t period = 2;
 
     TA0CCTL0 &= ~CCIFG;             // Clear CCR0 IFG
     TA0CCR0 = TA0R + period;        // Set time of next interrupt

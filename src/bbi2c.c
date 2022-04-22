@@ -196,7 +196,7 @@ void bbi2c_next(void){
         break;
     case 7:
         PORTS_SCL_LOW;
-        if(bbi2c_bits < 7)
+        if(bbi2c_bits < 8)
             bbi2c_state = 4;
         else
             bbi2c_state = 8;
@@ -247,7 +247,7 @@ void bbi2c_next(void){
         break;
     case 17:
         PORTS_SCL_LOW;
-        if(bbi2c_bits < 7)
+        if(bbi2c_bits < 8)
             bbi2c_state = 14;
         else
             bbi2c_state = 18;

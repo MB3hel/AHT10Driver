@@ -20,7 +20,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// Other globals
 ////////////////////////////////////////////////////////////////////////////////
-volatile unsigned int counter_500ms = 0;
+volatile unsigned int counter_250ms = 0;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,9 +32,10 @@ volatile uint8_t flags = 0;
 
 #define TIMING_10MS         BIT0
 #define TIMING_100MS        BIT1
-#define TIMING_500MS        BIT2
-#define TIMING_1S           BIT3
-#define I2C_DONE            BIT4
+#define TIMING_250MS        BIT2
+#define TIMING_500MS        BIT3
+#define TIMING_1S           BIT4
+#define I2C_DONE            BIT5
 
 #define SET_FLAG(x)         flags |= x
 #define CHECK_FLAG(x)       (flags & x)
@@ -90,6 +91,13 @@ int main(void){
             CLEAR_FLAG(TIMING_100MS);
             // -----------------------------------------------------------------
             // Run every 100ms
+            // -----------------------------------------------------------------
+
+            // -----------------------------------------------------------------
+        }else if(CHECK_FLAG(TIMING_250MS)){
+            CLEAR_FLAG(TIMING_250MS);
+            // -----------------------------------------------------------------
+            // Run every 250ms
             // -----------------------------------------------------------------
 
             // -----------------------------------------------------------------
@@ -162,11 +170,15 @@ __interrupt void isr_timera1_ccrn(void){
            LPM0_EXIT;                   // Flag needs handling; exit LPM0
            break;
        case TAIV__TACCR2:               // CCR2: 500ms timing
-           SET_FLAG(TIMING_500MS);      // Set correct flag
-           counter_500ms++;             // Increment counter (used for 1s)
-           if(counter_500ms == 2){
-               SET_FLAG(TIMING_1S);     // Set correct flag
-               counter_500ms = 0;       // Reset counter
+           SET_FLAG(TIMING_250MS);      // Set correct flag
+           counter_250ms++;             // Increment counter (used for 1s)
+           if(counter_250ms == 2){
+               SET_FLAG(TIMING_500MS);
+           }
+           if(counter_250ms == 4){
+               SET_FLAG(TIMING_1S);     // Set correct flags
+               SET_FLAG(TIMING_500MS);
+               counter_250ms = 0;       // Reset counter
            }
            LPM0_EXIT;                   // Flag needs handling; exit LPM0
            break;
