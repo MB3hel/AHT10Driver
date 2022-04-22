@@ -77,16 +77,18 @@ int main(void){
 
     GRN_LED_OFF;
     RED_LED_OFF;
-    bbi2c_perform(&i2c_trans);
-
-
-    GRN_LED_ON;
 
     while(true){
-        // bbi2c_perform(&i2c_trans);
+        bbi2c_perform(&i2c_trans);
         while(!CHECK_FLAG(I2C_DONE));
         CLEAR_FLAG(I2C_DONE);
-        __delay_cycles(1e6);
+        if(CHECK_FLAG(I2C_FAIL)){
+            CLEAR_FLAG(I2C_FAIL);
+            RED_LED_ON;
+        }else{
+            RED_LED_OFF;
+        }
+        __delay_cycles(16e6);
     }
 
     // -------------------------------------------------------------------------
