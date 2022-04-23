@@ -15,13 +15,7 @@
 #include <ports.h>
 #include <timers.h>
 #include <bbi2c.h>
-
-
-////////////////////////////////////////////////////////////////////////////////
-/// Other globals
-////////////////////////////////////////////////////////////////////////////////
-uint32_t i2c_idle_time = 0;
-bool i2c_should_send = false;
+#include <aht10.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -31,14 +25,11 @@ bool i2c_should_send = false;
 // Can make this wider if necessary
 volatile uint8_t flags = 0;
 
-#define TIMING_10MS         BIT0
-#define TIMING_100MS        BIT1
-#define TIMING_250MS        BIT2
-#define TIMING_500MS        BIT3
-#define TIMING_1S           BIT4
-#define I2C_DONE            BIT5
-#define I2C_FAIL            BIT6
-#define TIMING_CUSTOM       BIT7
+#define TIMING_10MS         BIT0        // Set every 10ms
+#define TIMING_100MS        BIT1        // Set every 100ms
+#define TIMING_250MS        BIT2        // Set every 250ms
+#define TIMING_500MS        BIT3        // Set every 500ms
+#define TIMING_1S           BIT4        // Set every 1s
 
 #define SET_FLAG(x)         flags |= (x)
 #define CHECK_FLAG(x)       (flags & x)
@@ -60,16 +51,7 @@ int main(void){
     ports_init();                       // Ports initialization & config
     timers_init();                      // Timer initialization
     bbi2c_init();                       // Initialize SW I2C
-
-    uint8_t aht10_command[3] = {0xE1, 0x08, 0x00};
-    bbi2c_transaction i2c_trans;
-    uint8_t read_buf[1];
-
-    i2c_trans.address = 0x38;
-    i2c_trans.write_count = 0;
-    i2c_trans.read_buf = read_buf;
-    i2c_trans.read_count = 1;
-
+    aht10_init();                       // Initialize AHT10 sensor
 
     // -------------------------------------------------------------------------
     // Setup initial state
@@ -77,7 +59,7 @@ int main(void){
 
     GRN_LED_OFF;
     RED_LED_OFF;
-    bbi2c_perform(&i2c_trans);
+
 
     // -------------------------------------------------------------------------
     // Main loop
@@ -89,24 +71,21 @@ int main(void){
             // -----------------------------------------------------------------
             // Run every 10ms
             // -----------------------------------------------------------------
-
+            // Nothing here
             // -----------------------------------------------------------------
         }else if(CHECK_FLAG(TIMING_100MS)){
             CLEAR_FLAG(TIMING_100MS);
             // -----------------------------------------------------------------
             // Run every 100ms
             // -----------------------------------------------------------------
-            if(i2c_should_send && (timers_now - i2c_idle_time >= 1000)){
-                i2c_should_send = false;
-                bbi2c_perform(&i2c_trans);
-            }
+            aht10_process();
             // -----------------------------------------------------------------
         }else if(CHECK_FLAG(TIMING_250MS)){
             CLEAR_FLAG(TIMING_250MS);
             // -----------------------------------------------------------------
             // Run every 250ms
             // -----------------------------------------------------------------
-
+            // Nothing here
             // -----------------------------------------------------------------
         }else if(CHECK_FLAG(TIMING_500MS)){
             CLEAR_FLAG(TIMING_500MS);
@@ -120,21 +99,7 @@ int main(void){
             // -----------------------------------------------------------------
             // Run every 1sec
             // -----------------------------------------------------------------
-            // RED_LED_TOGGLE;
-            // -----------------------------------------------------------------
-        }else if(CHECK_FLAG(I2C_DONE)){
-            // -----------------------------------------------------------------
-            // Run when BBI2C done with a transaction
-            // -----------------------------------------------------------------
-            CLEAR_FLAG(I2C_DONE);
-            if(CHECK_FLAG(I2C_FAIL)){
-                CLEAR_FLAG(I2C_FAIL);
-                RED_LED_ON;
-            }else{
-                RED_LED_OFF;
-            }
-            i2c_idle_time = timers_now;
-            i2c_should_send = true;
+            RED_LED_TOGGLE;
             // -----------------------------------------------------------------
         }else{
             // No flags set. Enter LPM0. Interrupts will exit LPM0 when flag set
@@ -156,16 +121,7 @@ int main(void){
 __interrupt void isr_timera0_ccr0(void){
     // CCR0: bbi2c timing
     TA0CCTL0 &= ~CCIE;                  // Disable interrupt
-    unsigned int res = bbi2c_next();    // Move to next state
-
-    if(res == BBI2C_DONE){
-        SET_FLAG(I2C_DONE);             // Transaction done. Set flag.
-        //LPM0_EXIT;                      // Flag needs handling; exit LPM0
-    }else if(res == BBI2C_FAIL){
-        SET_FLAG(I2C_DONE);             // Transaction done. Set flag.
-        SET_FLAG(I2C_FAIL);             // Transaction failed. Set flag.
-        //LPM0_EXIT;                      // Flags need handling; exit LPM0
-    }
+    bbi2c_next();                       // Move to next state
 }
 
 #pragma vector=TIMER_A0_CCRN_VECTOR

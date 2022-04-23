@@ -32,11 +32,13 @@ bbi2c_transaction *bbi2c_trans;
 ////////////////////////////////////////////////////////////////////////////////
 
 void bbi2c_init(void){
+    bbi2c_trans = NULL;
     PORTS_SDA_HIGH;
     PORTS_SCL_HIGH;
 }
 
 void bbi2c_perform(bbi2c_transaction *trans){
+    trans->status = BBI2C_BUSY;
     bbi2c_trans = trans;
     bbi2c_state = 0;
 
@@ -132,7 +134,7 @@ void bbi2c_perform(bbi2c_transaction *trans){
  * endfunction
  */
 
-unsigned int bbi2c_next(void){
+void bbi2c_next(void){
 
     // -------------------------------------------------------------------------
     // Write portion of transaction
@@ -239,7 +241,9 @@ unsigned int bbi2c_next(void){
         SMALL_DELAY;
         PORTS_SDA_HIGH;
         if(bbi2c_pos != bbi2c_trans->write_count){
-            return BBI2C_FAIL;
+            bbi2c_trans->status = BBI2C_FAIL;
+            bbi2c_trans = NULL;
+            return;
         }
         bbi2c_state = 50; // Move to read portion
         break;
@@ -252,7 +256,9 @@ unsigned int bbi2c_next(void){
     switch(bbi2c_state){
     case 50:
         if(bbi2c_trans->read_count == 0){
-            return BBI2C_DONE;
+            bbi2c_trans->status = BBI2C_DONE;
+            bbi2c_trans = NULL;
+            return;
         }
         //fallthrough
 
@@ -359,14 +365,15 @@ unsigned int bbi2c_next(void){
         break;
     case 64:
         if(bbi2c_pos == bbi2c_trans->read_count)
-            return BBI2C_DONE;
-        return BBI2C_FAIL;
+            bbi2c_trans->status = BBI2C_DONE;
+        else
+            bbi2c_trans->status = BBI2C_FAIL;
+        bbi2c_trans = NULL;
+        return;
     }
     // -------------------------------------------------------------------------
 
 
     // Not done, so enable timer to move to next state
     timers_bbi2c_delay();
-
-    return BBI2C_BUSY;
 }
