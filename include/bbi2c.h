@@ -31,14 +31,13 @@ typedef struct {
     unsigned int write_count;
     uint8_t *read_buf;
     unsigned int read_count;
-    unsigned int status;
 } bbi2c_transaction;
-
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Globals
 ////////////////////////////////////////////////////////////////////////////////
-extern bbi2c_transaction *bbi2c_trans;  // Currently in progress transaction
+
+bbi2c_transaction *bbi2c_trans;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -58,4 +57,4 @@ void bbi2c_init(void);
 
 void bbi2c_perform(bbi2c_transaction *trans);
 
-void bbi2c_next(void);
+unsigned int bbi2c_next(void);

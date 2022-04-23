@@ -4,6 +4,7 @@
  */
 
 #include <aht10.h>
+#include <timers.h>
 
 /*
  * Basic usage outline (pseudocode; blocking)
@@ -62,15 +63,12 @@
 /// Macros
 ////////////////////////////////////////////////////////////////////////////////
 
-#define STATE_NONE              0           // No state
-#define STATE_RST               1           // Send reset command
-#define STATE_CAL               2           // Send calibrate command
-#define STATE_CALWAIT           3           // Wait until not busy
-#define STATE_IDLE              4           // Wait until aht10_read() call
-#define STATE_TRG               5           // Send read trigger
-#define STATE_TRGWAIT           6           // Wait until not busy
-#define STATE_READ              7           // Read data
-#define STATE_CALC              8           // Calculate temp & humidity
+#define STATE_W_RST         0       // Write reset command
+#define STATE_W_CAL         1       // Write calibrate command
+#define STATE_R_STACAL      2       // Read status until not busy
+#define STATE_W_TRG         3       // Write trigger for read data
+#define STATE_R_STATRG      4       // Read status until not busy
+#define STATE_R_DATA        5       // Read actual data
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -79,11 +77,10 @@
 unsigned int aht10_temperature;
 unsigned int aht10_humidity;
 unsigned int aht10_status;
-
+uint32_t aht10_last_read;
 bbi2c_transaction aht10_trans;
 
-unsigned int aht10_current_state;
-unsigned int aht10_next_state;
+unsigned int aht10_state;
 uint8_t aht10_wb[3];
 uint8_t aht10_rb[6];
 
@@ -92,69 +89,27 @@ uint8_t aht10_rb[6];
 /// Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-void aht10_init(void){
-    aht10_trans.address = AHT10_ADDR;
-    ath10_trans.write_buf = aht10_wb;
-    aht10_read_buf = aht10_rb;
+/**
+ * Called when state is changed. Runs new state's actions
+ */
+void aht10_actions(void){
 
-    aht10_status = AHT10_NOINIT;
-    aht10_temperature = 0;
-    aht10_humidity = 0;
-    aht10_current_state = STATE_NONE;
-    aht10_next_state = STATE_RST;
 }
 
-void aht10_process(void){
-    if(aht10_status == AHT10_NODEV)
-        return;         // No device connected
-
-    // -------------------------------------------------------------------------
-    // Actions to be performed on transition to a new state
-    // -------------------------------------------------------------------------
-    if(aht10_next_state != STATE_NONE){
-        switch(aht10_next_state){
-        case STATE_RST:
-            // Send reset command
-            aht10_wb[0] = 0xBA;
-            aht10_trans.write_count = 1;
-            aht10_trans.read_count = 0;
-            bbi2c_perform(&aht10_trans);
-            break;
-        case STATE_CAL:
-            // Send calibrate command
-            aht10_wb[0] = 0x08;
-            aht10_wb[1] = 0x08;
-            aht10_wb[2] = 0x00;
-            aht10_trans.write_count = 3;
-            aht10_trans.read_count = 0;
-            bbi2c_perform(aht10_trans);
-            break;
-        case STATE_CALWAIT:
-            // Read status to determine if busy
-            aht10_trans.write_count = 0;
-            aht10_trans.read_count = 1;
-            bbi2c_perform(aht10_trans);
-            break;
-        case STATE_IDLE:
-            aht10_status = AHT10_IDLE;
-            break;
-        case
-        }
-        aht10_current_state = aht10_next_state;
-        aht10_next_state = STATE_NONE;
-    }
-
-
-    // -------------------------------------------------------------------------
-    // Actions to be performed periodically while in the current state
-    // -------------------------------------------------------------------------
-    switch(aht10_current_state){
-
-    }
+void aht10_init(void){
+    aht10_last_read = 0;
+    aht10_status = AHT10_NOINIT;
+    aht10_trans.address = 0x38;
+    aht10_trans.write_buf = aht10_wb;
+    aht10_trans.read_buf = aht10_rb;
+    aht10_state = 0;
 }
 
 void aht10_read(void){
-    // Cannot start a reading if AHT10 not initialized and idle
-    if(aht10_status != AHT10_IDLE)
-        return;
+
 }
+
+void aht10_i2c_done(bool success){
+
+}
+

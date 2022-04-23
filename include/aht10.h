@@ -18,10 +18,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // AHT10 Status
-#define AHT10_IDLE      0                   // Idle. Ready to read
-#define AHT10_BUSY      1                   // Reading in progress
-#define AHT10_NODEV     2                   // No I2C device found
-#define AHT10_NOINIT    3                   // Not initialized.
+#define AHT10_NOINIT            0           // Not initialized
+#define AHT10_IDLE              1           // Idle (can request read)
+#define AHT10_BUSY              2           // Busy (cannot request read)
+#define AHT10_NODEV             3           // Device not found
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -29,7 +29,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 extern unsigned int aht10_temperature;      // Last read temperature (deg C)
 extern unsigned int aht10_humidity;         // Last read humidity (%)
-extern unsigned int aht10_status;           // Current AHT10 status
+extern bbi2c_transaction aht10_trans;       // Transaction var for AHT10
+extern uint32_t aht10_last_read;            // Time of last read completion
+extern unsigned int aht10_status;           // Current status
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,16 +39,17 @@ extern unsigned int aht10_status;           // Current AHT10 status
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Initialize AHT10 state machine and subsystem
+ * Initialize AHT10 subsystem and state machine
  */
 void aht10_init(void);
 
 /**
- * Handle whatever needs to be done for the AHT10
- */
-void aht10_process(void);
-
-/**
- * Start another reading of data (only if in IDLE state)
+ * Request a read of data. Only works if status is AHT10_IDLE.
  */
 void aht10_read(void);
+
+/**
+ * Indicate that I2C transaction finished. Triggers state changes.
+ * @param success true if I2C transaction successful; false if not.
+ */
+void aht10_i2c_done(bool success);

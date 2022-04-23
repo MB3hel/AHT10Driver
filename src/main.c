@@ -30,6 +30,8 @@ volatile uint8_t flags = 0;
 #define TIMING_250MS        BIT2        // Set every 250ms
 #define TIMING_500MS        BIT3        // Set every 500ms
 #define TIMING_1S           BIT4        // Set every 1s
+#define AHT10_DONE          BIT5        // AHT10 I2C done (success or fail)
+#define AHT10_FAIL          BIT6        // AHT10 I2C failed
 
 #define SET_FLAG(x)         flags |= (x)
 #define CHECK_FLAG(x)       (flags & x)
@@ -51,7 +53,6 @@ int main(void){
     ports_init();                       // Ports initialization & config
     timers_init();                      // Timer initialization
     bbi2c_init();                       // Initialize SW I2C
-    aht10_init();                       // Initialize AHT10 sensor
 
     // -------------------------------------------------------------------------
     // Setup initial state
@@ -78,7 +79,10 @@ int main(void){
             // -----------------------------------------------------------------
             // Run every 100ms
             // -----------------------------------------------------------------
-            aht10_process();
+            // Attempt to read AHT10 every 500ms
+            if(aht10_status == AHT10_IDLE && timers_now - aht10_last_read > 500){
+                aht10_read();
+            }
             // -----------------------------------------------------------------
         }else if(CHECK_FLAG(TIMING_250MS)){
             CLEAR_FLAG(TIMING_250MS);
@@ -101,6 +105,14 @@ int main(void){
             // -----------------------------------------------------------------
             RED_LED_TOGGLE;
             // -----------------------------------------------------------------
+        }else if(CHECK_FLAG(AHT10_DONE)){
+            CLEAR_FLAG(AHT10_DONE);
+            if(CHECK_FLAG(AHT10_FAIL)){
+                CLEAR_FLAG(AHT10_FAIL);
+                aht10_i2c_done(false);
+            }else{
+                aht10_i2c_done(true);
+            }
         }else{
             // No flags set. Enter LPM0. Interrupts will exit LPM0 when flag set
             LPM0;
@@ -121,7 +133,15 @@ int main(void){
 __interrupt void isr_timera0_ccr0(void){
     // CCR0: bbi2c timing
     TA0CCTL0 &= ~CCIE;                  // Disable interrupt
-    bbi2c_next();                       // Move to next state
+    unsigned int res = bbi2c_next();    // Move to next state
+
+    if(res == BBI2C_DONE && bbi2c_trans == &aht10_trans){
+        SET_FLAG(AHT10_DONE);
+        LPM0_EXIT;
+    }else if(res == BBI2C_FAIL && bbi2c_trans == &aht10_trans){
+        SET_FLAG(AHT10_DONE | AHT10_FAIL);
+        LPM0_EXIT;
+    }
 }
 
 #pragma vector=TIMER_A0_CCRN_VECTOR
