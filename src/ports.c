@@ -23,14 +23,17 @@ void ports_init1(void){
     P1OUT  = 0x00;
     ADC10AE0 = 0x00;
 
-    P1SEL &= ~GRN_LED;      // GPIO mode
-    P1SEL2 &= ~GRN_LED;     // GPIO mode
+    P1SEL &= ~GRN_LED;      // GPIO function
+    P1SEL2 &= ~GRN_LED;     // GPIO function
     P1DIR |= GRN_LED;       // Output direction
     P1IE &= ~GRN_LED;       // Disable interrupt
     P1OUT &= ~GRN_LED;      // Initially low
 
-    P1SEL &= ~RED_LED;      // GPIO mode
-    P1SEL2 &= ~RED_LED;     // GPIO mode
+    P1SEL |= UCA0RXD;       // UCA0 function
+    P1SEL2 |= UCA0RXD;      // UCA0 function
+
+    P1SEL &= ~RED_LED;      // GPIO function
+    P1SEL2 &= ~RED_LED;     // GPIO function
     P1DIR |= RED_LED;       // Output direction
     P1IE &= ~RED_LED;       // Disable interrupt
     P1OUT &= ~RED_LED;      // Initially low
@@ -51,14 +54,14 @@ void ports_init2(void){
     P2IES  = 0x00;
     P2OUT  = 0x00;
 
-    P2SEL &= ~SCL;          // GPIO mode
-    P2SEL2 &= ~SCL;         // GPIO mode
+    P2SEL &= ~SCL;          // GPIO function
+    P2SEL2 &= ~SCL;         // GPIO function
     P2DIR |= SCL;           // Output direction (initially)
     P2IE &= ~SCL;           // Disable interrupt
     P2OUT &= ~SCL;          // Output low
 
-    P2SEL &= ~SDA;          // GPIO mode
-    P2SEL2 &= ~SDA;         // GPIO mode
+    P2SEL &= ~SDA;          // GPIO function
+    P2SEL2 &= ~SDA;         // GPIO function
     P2DIR |= SDA;           // Output direction (initially)
     P2IE &= ~SDA;           // Disable interrupt
     P2OUT &= ~SDA;          // Initially low

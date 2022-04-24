@@ -16,6 +16,7 @@
 #include <timers.h>
 #include <bbi2c.h>
 #include <aht10.h>
+#include <pc_comm.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -199,3 +200,24 @@ __interrupt void isr_timera1_ccrn(void){
            break;
     }
 }
+
+// -----------------------------------------------------------------------------
+// USCI0 (ISRs shared for A0 and B0)
+// -----------------------------------------------------------------------------
+
+#pragma vector=USCIAB0RX_VECTOR
+__interrupt void usci0_rx_isr(void){
+    if(IFG2 & UCA0RXIFG){
+        IFG2 &= !UCA0RXIFG;             // Clear RX flag for UCA0
+        pc_comm_handle_read();          // Handle pc_comm receive
+    }
+}
+
+#pragma vector=USCIAB0TX_VECTOR
+__interrupt void usci0_tx_isr(void){
+    if(IFG2 & UCA0TXIFG){
+        IFG2 &= ~UCA0TXIFG;             // Clear TX flag for UCA0
+        pc_comm_handle_write();         // Handle pc_comm transmit
+    }
+}
+

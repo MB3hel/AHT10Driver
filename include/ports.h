@@ -15,6 +15,8 @@
 
 // Port 1
 #define GRN_LED                 BIT0
+#define UCA0RXD                 BIT1
+#define UCA0TXD                 BIT2
 #define RED_LED                 BIT6
 
 // Port 2

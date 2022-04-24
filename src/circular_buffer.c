@@ -9,7 +9,7 @@
 /// Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-void cb_init(circular_buffer *cb, uint8_t *backing_array, size_t length){
+void cb_init(volatile circular_buffer *cb, uint8_t *backing_array, unsigned int length){
     cb->data = backing_array;
     cb->length = length;
     cb->read_pos = 0;
@@ -17,7 +17,7 @@ void cb_init(circular_buffer *cb, uint8_t *backing_array, size_t length){
     cb->full = false;
 }
 
-inline bool cb_write_byte(circular_buffer *cb, uint8_t value){
+inline bool cb_write_byte(volatile circular_buffer *cb, uint8_t value){
     if(!cb_full(cb)){
         cb->data[cb->write_pos] = value;            // Write data
         cb->write_pos++;                            // Increment write pos
@@ -30,8 +30,8 @@ inline bool cb_write_byte(circular_buffer *cb, uint8_t value){
     return false;                                   // Write failure
 }
 
-inline size_t cb_write(circular_buffer *cb, uint8_t *src, size_t length){
-    size_t i;
+inline unsigned int cb_write(volatile circular_buffer *cb, uint8_t *src, unsigned int length){
+    unsigned int i;
     if(cb_full(cb)){
         return 0;                                   // Buffer full; no write
     }
@@ -48,7 +48,7 @@ inline size_t cb_write(circular_buffer *cb, uint8_t *src, size_t length){
     return length;                                  // Wrote all bytes
 }
 
-inline bool cb_read_byte(circular_buffer *cb, uint8_t *dest){
+inline bool cb_read_byte(volatile circular_buffer *cb, uint8_t *dest){
     if(!cb_empty(cb)){
         *dest = cb->data[cb->read_pos];             // Read one byte
         cb->read_pos++;                             // Increment read pos
@@ -60,8 +60,8 @@ inline bool cb_read_byte(circular_buffer *cb, uint8_t *dest){
     return false;                                   // Read failure
 }
 
-inline size_t cb_read(circular_buffer *cb, uint8_t *dest, size_t length){
-    size_t i;
+inline unsigned int cb_read(volatile circular_buffer *cb, uint8_t *dest, unsigned int length){
+    unsigned int i;
     for(i = 0; i < length; ++i){
         if(cb_empty(cb)){
             return i;                               // No more data to read
@@ -75,10 +75,10 @@ inline size_t cb_read(circular_buffer *cb, uint8_t *dest, size_t length){
     return length;                                  // Read all requested data
 }
 
-inline bool cb_empty(circular_buffer *cb){
+inline bool cb_empty(volatile circular_buffer *cb){
     return (cb->read_pos == cb->write_pos) && !cb->full;
 }
 
-inline bool cb_full(circular_buffer *cb){
+inline bool cb_full(volatile circular_buffer *cb){
     return (cb->write_pos == cb->read_pos) && cb->full;
 }
