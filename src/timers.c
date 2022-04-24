@@ -5,8 +5,8 @@
 
 #include <timers.h>
 #include <msp430.h>
+#include <msp430helper.h>
 #include <stdint.h>
-#include <g2553support.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -133,8 +133,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// Globals
 ////////////////////////////////////////////////////////////////////////////////
-float aht10_temperature;
-float aht10_humidity;
+unsigned int aht10_temperature;
+unsigned int aht10_humidity;
 unsigned int aht10_ec;
 uint32_t aht10_last_read;
 bbi2c_transaction aht10_trans;
@@ -204,21 +204,53 @@ void aht10_actions(void){
 
         // TODO: Do this without floating point calculations
 
+        // ---------------------------------------------------------------------
         // Calculate humidity
+        // ---------------------------------------------------------------------
         tmp = aht10_rb[1];
         tmp <<= 8;
         tmp |= aht10_rb[2];
         tmp <<= 4;
         tmp |= aht10_rb[3] >> 4;
-        aht10_humidity = ((float)tmp * 100) / 0x100000;
 
+        // Floating point calculation
+        // humidity = ((float)tmp * 100) / (2^20);
+        // So to keep first two decimal points as last two digits of integer
+        // humidity = (tmp * 10000) / (2^20);
+        // However, tmp could be up to 2^20 * 10000 > 32-bit int
+        // But (10000)/(2^20) == (625)/(2^16)
+        // 2^20 * 625 does not exceed 32-bit int, so this works
+
+        // Mult by 625: 625x = 512x + 64x + 32x + 16x + x
+        tmp = (tmp << 9) + (tmp << 6) + (tmp << 5) + (tmp << 4) + tmp;
+
+        // Divide by 2^16
+        aht10_humidity = tmp >> 16;
+
+
+        // ---------------------------------------------------------------------
         // Calculate temperature
+        // ---------------------------------------------------------------------
         tmp = aht10_rb[3] & 0x0F;
         tmp <<= 8;
         tmp |= aht10_rb[4];
         tmp <<= 8;
         tmp |= aht10_rb[5];
-        aht10_temperature = ((float)tmp * 200 / 0x100000) - 50;
+
+        // Floating point calculation
+        // temperature = (((float)tmp * 200) / (2^20)) - 50
+        // So to keep first two decimal points as last to digits of integer
+        // temperature = (tmp * 20000) / (2^20);
+        // However, tmp could be up to 2^20 * 20000 > 32-bit int
+        // But (20000)/(2^20) = (625)/(2^15)
+        // 2^20 * 625 does not exceed 32-bit int so this works
+
+        // Mult by 625: 625x = 512x + 64x + 32x + 16x + x
+        tmp = (tmp << 9) + (tmp << 6) + (tmp << 5) + (tmp << 4) + tmp;
+
+        // Divide by 2^15
+        aht10_temperature = tmp >> 15;
+
         break;
     }
 }

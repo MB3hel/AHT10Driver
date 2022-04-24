@@ -1,11 +1,40 @@
 /**
  * @file g2553support.h
- * @brief Macro definitions to help with code readability for the MSP430G2553
+ * @brief Macro definitions to help with code readability and helper functions
+ * to perform common operations
  * @author Marcus Behel (mgbehel@ncsu.edu)
  * @version 1.0.0
  */
 
 #pragma once
+
+#include <stdint.h>
+
+////////////////////////////////////////////////////////////////////////////////
+/// Helper functions
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Integer to string representation
+ * @param value Value to convert to string
+ * @param data String to write into. MUST BE AT LEAST 12 CHARS WIDE
+ */
+unsigned int int_to_str(int32_t value, char *data);
+
+/**
+ * Unsigned divide by 10 using bitwise operations. Based on method from
+ * http://web.archive.org/web/20180517023231/http://www.hackersdelight.org/divcMore.pdf
+ * Modifies provided number and returns remainder
+ * @param n Number to divide by 10
+ * @param q Quotient
+ * @param r Remainder
+ */
+void udiv10(uint32_t n, uint32_t *q, uint32_t *r);
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// Macros
+////////////////////////////////////////////////////////////////////////////////
 
 #if defined (__MSP430G2553__)
 

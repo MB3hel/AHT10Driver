@@ -5,8 +5,6 @@
  */
 
 #include <msp430.h>
-#include <g2553support.h>
-
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -16,7 +14,8 @@
 #include <timers.h>
 #include <bbi2c.h>
 #include <aht10.h>
-#include <pc_comm.h>
+#include <msp430helper.h>
+#include <uca0uart.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -41,13 +40,38 @@ volatile uint8_t flags = 0;
 /// Program main tree
 ////////////////////////////////////////////////////////////////////////////////
 
-// TODO: Use a better method than this...
-void format_value(unsigned int value, char *dest){
-    // Two digits of value
-    dest[1] = value % 10 + 48;
-    value /= 10;
-    dest[0] = value % 10 + 48;
-    dest[2] = '\0';
+void print_sensor_data(void){
+    char buf[13];
+    unsigned int len;
+
+    // Convert to string (last two digits after decimal point)
+    len = int_to_str(aht10_temperature, buf);
+
+    // Shift last two digits (and null) right one place and add decimal
+    buf[len + 1] = buf[len];
+    buf[len] = buf[len - 1];
+    buf[len - 1] = buf[len - 2];
+    buf[len - 2] = '.';
+
+    // Print temperature
+    uca0uart_write_str("T: ");
+    uca0uart_write_str(&buf[1]);
+    uca0uart_write_str("\r\n");
+
+    // Convert to string (last two digits after decimal point)
+    len = int_to_str(aht10_humidity, buf);
+
+    // Shift last two digits (and null) right one place and add decimal
+    buf[len + 1] = buf[len];
+    buf[len] = buf[len - 1];
+    buf[len - 1] = buf[len - 2];
+    buf[len - 2] = '.';
+
+    // Print temperature
+    uca0uart_write_str("H: ");
+    uca0uart_write_str(&buf[1]);
+    uca0uart_write_str("\r\n\r\n");
+
 }
 
 int main(void){
@@ -62,7 +86,7 @@ int main(void){
     timers_init();                      // Timer initialization
     bbi2c_init();                       // Initialize SW I2C
     aht10_init();                       // Initialize AHT10 state machine
-    pc_comm_init(PC_COMM_BUAD_9600);    // Initialize pc_comm subsystem
+    uca0uart_init(uca0uart_BUAD_9600);  // Initialize uca0uart subsystem
 
 
     // -------------------------------------------------------------------------
@@ -83,11 +107,7 @@ int main(void){
             // -----------------------------------------------------------------
             // Run every 10ms
             // -----------------------------------------------------------------
-
-            // Note: Uncomment to cause overflow bug
-            // TODO: Fix this bug
-            // pc_comm_write_str("ABCDEFGHIJKLMNOPQRSTUVWXYZ1234\r\n");
-
+            // Nothing here
             // -----------------------------------------------------------------
         }else if(CHECK_FLAG(TIMING_100MS)){
             CLEAR_FLAG(TIMING_100MS);
@@ -101,7 +121,7 @@ int main(void){
             // -----------------------------------------------------------------
             // Run every 500ms
             // -----------------------------------------------------------------
-            GRN_LED_TOGGLE;
+            GRN_LED_TOGGLE;             // Blink green led with on-time 500ms
             aht10_read();               // Attempt to read AHT10 every 500ms
             // -----------------------------------------------------------------
         }else if(CHECK_FLAG(TIMING_1S)){
@@ -109,22 +129,8 @@ int main(void){
             // -----------------------------------------------------------------
             // Run every 1sec
             // -----------------------------------------------------------------
-            RED_LED_TOGGLE;
-            char buf[3];
-            pc_comm_write_str("T: ");
-            format_value((int)aht10_temperature, buf);
-            pc_comm_write_str(buf);
-            pc_comm_write_byte('.');
-            format_value((int)(aht10_temperature * 100), buf);
-            pc_comm_write_str(buf);
-            pc_comm_write_str("\n");
-            pc_comm_write_str("H: ");
-            format_value((int)aht10_humidity, buf);
-            pc_comm_write_str(buf);
-            pc_comm_write_byte('.');
-            format_value((int)(aht10_humidity * 100), buf);
-            pc_comm_write_str(buf);
-            pc_comm_write_str("\n\n");
+            RED_LED_TOGGLE;             // Blink red led with on-time 1s
+            print_sensor_data();        // Print AHT10 data every second
             // -----------------------------------------------------------------
         }else if(CHECK_FLAG(AHT10_DONE)){
             CLEAR_FLAG(AHT10_DONE);
@@ -214,6 +220,7 @@ __interrupt void isr_timera1_ccrn(void){
     }
 }
 
+
 // -----------------------------------------------------------------------------
 // USCI0 (ISRs shared for A0 and B0)
 // -----------------------------------------------------------------------------
@@ -222,7 +229,7 @@ __interrupt void isr_timera1_ccrn(void){
 __interrupt void usci0_rx_isr(void){
     if(IFG2 & UCA0RXIFG){
         IFG2 &= ~UCA0RXIFG;             // Clear RX flag for UCA0
-        pc_comm_handle_read();          // Handle pc_comm receive
+        uca0uart_handle_read();         // Handle uca0uart receive
     }
 }
 
@@ -230,7 +237,7 @@ __interrupt void usci0_rx_isr(void){
 __interrupt void usci0_tx_isr(void){
     if(IFG2 & UCA0TXIFG){
         IFG2 &= ~UCA0TXIFG;             // Clear TX flag for UCA0
-        pc_comm_handle_write();         // Handle pc_comm transmit
+        uca0uart_handle_write();        // Handle uca0uart transmit
     }
 }
 

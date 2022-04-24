@@ -5,7 +5,7 @@
 
 #include <system.h>
 #include <msp430.h>
-#include <g2553support.h>
+#include <msp430helper.h>
 
 // Make sure these are set to the same frequency
 // Valid frequencies are 1MHz, 8MHz, 12MHz, 16MHz
@@ -26,3 +26,4 @@ void system_init(void){
     BCSCTL2 |= DIVM__1;                 // MCLK divided by 1
     DCOCTL = CLOCK_CALDCO;              // Configure DCO frequency
 }
+
