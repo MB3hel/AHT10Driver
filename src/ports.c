@@ -32,6 +32,9 @@ void ports_init1(void){
     P1SEL |= UCA0RXD;       // UCA0 function
     P1SEL2 |= UCA0RXD;      // UCA0 function
 
+    P1SEL |= UCA0TXD;       // UCA0 function
+    P1SEL2 |= UCA0TXD;      // UCA0 function
+
     P1SEL &= ~RED_LED;      // GPIO function
     P1SEL2 &= ~RED_LED;     // GPIO function
     P1DIR |= RED_LED;       // Output direction

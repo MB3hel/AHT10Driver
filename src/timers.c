@@ -13,7 +13,7 @@
 /// Globals
 ////////////////////////////////////////////////////////////////////////////////
 volatile uint32_t timers_now = 0;
-volatile unsigned int timers_250_count = 0;
+volatile unsigned int timers_500_count = 0;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -21,10 +21,10 @@ volatile unsigned int timers_250_count = 0;
 ////////////////////////////////////////////////////////////////////////////////
 
 void timers_init_a0(void){
-    TA0CTL = TASSEL__SMCLK;         // Derive timer clock from SMCLK = 2MHz
+    TA0CTL = TASSEL__SMCLK;         // Derive timer clock from SMCLK = 1MHz
     TA0CTL |= TACLR;                // Reset timer configuration
     TA0CTL |= MC__CONTINUOUS;       // Timer in continuous mode
-    TA0CTL |= ID__1;                // Divide timer clock by 1 = 2MHz
+    TA0CTL |= ID__1;                // Divide timer clock by 1 = 1MHz
 
     // Used for bbi2c
     TA0CCTL0 &= ~CCIFG;             // Clear CCR0 IFG
@@ -43,10 +43,10 @@ void timers_init_a0(void){
 }
 
 void timers_init_a1(void){
-    TA1CTL = TASSEL__SMCLK;         // Derive timer clock from SMCLK = 2MHz
+    TA1CTL = TASSEL__SMCLK;         // Derive timer clock from SMCLK = 1MHz
     TA1CTL |= TACLR;                // Reset timer configuration
     TA1CTL |= MC__CONTINUOUS;       // Timer in continuous mode
-    TA1CTL |= ID__8;                // Divide timer clock by 8 = 250kHz
+    TA1CTL |= ID__8;                // Divide timer clock by 8 = 125kHz
 
     // Used for 10ms timing
     TA1CCTL0 &= ~CCIFG;             // Clear CCR0 IFG
@@ -73,11 +73,11 @@ void timers_init(void){
 }
 
 void timers_bbi2c_delay(void){
-    // TA0 counts at 2MHz = TimerFreq (see timer steup above)
+    // TA0 counts at 1MHz = TimerFreq (see timer steup above)
     // I2CDataRate (up to 100kHz is normal mode)
     // I2CDataRate = TimerFreq / (2 * period)
     // Configured for approx 50kHz
-    const uint16_t period = 20;
+    const uint16_t period = 10;
 
     TA0CCTL0 &= ~CCIFG;             // Clear CCR0 IFG
     TA0CCR0 = TA0R + period;        // Set time of next interrupt

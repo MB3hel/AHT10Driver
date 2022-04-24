@@ -28,11 +28,10 @@ volatile uint8_t flags = 0;
 
 #define TIMING_10MS         BIT0        // Set every 10ms
 #define TIMING_100MS        BIT1        // Set every 100ms
-#define TIMING_250MS        BIT2        // Set every 250ms
-#define TIMING_500MS        BIT3        // Set every 500ms
-#define TIMING_1S           BIT4        // Set every 1s
-#define AHT10_DONE          BIT5        // AHT10 I2C done (success or fail)
-#define AHT10_FAIL          BIT6        // AHT10 I2C failed
+#define TIMING_500MS        BIT2        // Set every 500ms
+#define TIMING_1S           BIT3        // Set every 1s
+#define AHT10_DONE          BIT4        // AHT10 I2C done (success or fail)
+#define AHT10_FAIL          BIT5        // AHT10 I2C failed
 
 #define SET_FLAG(x)         flags |= (x)
 #define CHECK_FLAG(x)       (flags & x)
@@ -54,6 +53,8 @@ int main(void){
     timers_init();                      // Timer initialization
     bbi2c_init();                       // Initialize SW I2C
     aht10_init();                       // Initialize AHT10 state machine
+    pc_comm_init(PC_COMM_BUAD_9600);    // Initialize pc_comm subsystem
+
 
     // -------------------------------------------------------------------------
     // Setup initial state
@@ -85,19 +86,13 @@ int main(void){
                 aht10_read();           // Request new sensor data
             }
             // -----------------------------------------------------------------
-        }else if(CHECK_FLAG(TIMING_250MS)){
-            CLEAR_FLAG(TIMING_250MS);
-            // -----------------------------------------------------------------
-            // Run every 250ms
-            // -----------------------------------------------------------------
-            // Nothing here
-            // -----------------------------------------------------------------
         }else if(CHECK_FLAG(TIMING_500MS)){
             CLEAR_FLAG(TIMING_500MS);
             // -----------------------------------------------------------------
             // Run every 500ms
             // -----------------------------------------------------------------
             GRN_LED_TOGGLE;
+            pc_comm_write_str("Hi\r\n");
             // -----------------------------------------------------------------
         }else if(CHECK_FLAG(TIMING_1S)){
             CLEAR_FLAG(TIMING_1S);
@@ -182,17 +177,13 @@ __interrupt void isr_timera1_ccrn(void){
            SET_FLAG(TIMING_100MS);      // Set correct flag
            LPM0_EXIT;                   // Flag needs handling; exit LPM0
            break;
-       case TAIV__TACCR2:               // CCR2: 250ms timing
-           TA1CCR2 += TA1CCR2_OFFSET;   // Configure to interrupt in 250ms
-           SET_FLAG(TIMING_250MS);      // Set correct flag
-           timers_250_count++;          // Increment counter (used for 1s)
-           if(timers_250_count == 2){
-               SET_FLAG(TIMING_500MS);  // Set correct flags
-           }
-           if(timers_250_count == 4){
-               SET_FLAG(TIMING_1S);     // Set correct flags
-               SET_FLAG(TIMING_500MS);  // Set correct flags
-               timers_250_count = 0;    // Reset counter
+       case TAIV__TACCR2:               // CCR2: 500ms timing
+           TA1CCR2 += TA1CCR2_OFFSET;   // Configure to interrupt in 500ms
+           SET_FLAG(TIMING_500MS);      // Set correct flag
+           timers_500_count++;          // Increment counter (used for 1s)
+           if(timers_500_count == 2){
+               SET_FLAG(TIMING_1S);     // Set correct flag
+               timers_500_count = 0;
            }
            LPM0_EXIT;                   // Flag needs handling; exit LPM0
            break;
@@ -208,7 +199,7 @@ __interrupt void isr_timera1_ccrn(void){
 #pragma vector=USCIAB0RX_VECTOR
 __interrupt void usci0_rx_isr(void){
     if(IFG2 & UCA0RXIFG){
-        IFG2 &= !UCA0RXIFG;             // Clear RX flag for UCA0
+        IFG2 &= ~UCA0RXIFG;             // Clear RX flag for UCA0
         pc_comm_handle_read();          // Handle pc_comm receive
     }
 }

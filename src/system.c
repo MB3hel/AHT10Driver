@@ -9,8 +9,8 @@
 
 // Make sure these are set to the same frequency
 // Valid frequencies are 1MHz, 8MHz, 12MHz, 16MHz
-#define CLOCK_CALBC1      CALBC1_16MHZ
-#define CLOCK_CALDCO      CALDCO_16MHZ
+#define CLOCK_CALBC1      CALBC1_8MHZ
+#define CLOCK_CALDCO      CALDCO_8MHZ
 
 
 void system_init(void){

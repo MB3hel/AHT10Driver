@@ -11,20 +11,20 @@
 /// Macros
 ////////////////////////////////////////////////////////////////////////////////
 
-#define WB_SIZE             32          // Write buffer size
-#define RB_SIZE             32          // Read buffer size
+#define WB_SIZE             32              // Write buffer size
+#define RB_SIZE             32              // Read buffer size
 
 
 #define ENABLE_TX_INT       IE2 |= UCA0TXIE
-#define DISABLE_TX_INT      IE2 &= UCA0TXIE
+#define DISABLE_TX_INT      IE2 &= ~UCA0TXIE
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Globals
 ////////////////////////////////////////////////////////////////////////////////
-uint8_t pc_comm_rb_array[32];           // Backing array for read buffer
-uint8_t pc_comm_wb_array[32];           // Backing array for write buffer
-volatile circular_buffer pc_comm_rb;    // Read circular (ring) buffer
-volatile circular_buffer pc_comm_wb;    // Write circular (write) buffer
+volatile uint8_t pc_comm_rb_array[WB_SIZE]; // Backing array for read buffer
+volatile uint8_t pc_comm_wb_array[RB_SIZE]; // Backing array for write buffer
+volatile circular_buffer pc_comm_rb;        // Read circular (ring) buffer
+volatile circular_buffer pc_comm_wb;        // Write circular (write) buffer
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -46,7 +46,7 @@ void pc_comm_init(unsigned int baud){
     UCA0CTL0 &= ~UCSPB;                 // One stop bit
     UCA0CTL0 |= UCMODE_0;               // UART mode
     UCA0CTL0 &= ~UCSYNC;                // Asynchronous mode
-    UCA0CTL1 |= UCSSEL_2;               // SMCLK as BRCLK src
+    UCA0CTL1 |= UCSSEL_2;               // SMCLK as BRCLK src (1MHz)
 
     pc_comm_set_buad(baud);             // Baud rate configuration
 
@@ -70,9 +70,9 @@ void pc_comm_set_buad(unsigned int baud){
     switch(baud){
     default:
     case PC_COMM_BUAD_9600:
-        UCA0BR1 = 0x00;                 // UCBRx = 0x000D (upper byte)
-        UCA0BR0 = 0x0D;                 // UCBRx = 0x000D (lowe byte)
-        UCA0MCTL = 0xD1;                // UCBRFx = 13, UCBRSx = 0, UCOS16 = 1
+        UCA0BR1 = 0x00;                 // UCBRx = 104 (upper byte)
+        UCA0BR0 = 0x68;                 // UCBRx = 104 (lower byte)
+        UCA0MCTL = 0x02;                // UCBRFx = 0, UCBRSx = 1, UCOS16 = 0
         break;
     }
 }
@@ -113,12 +113,12 @@ unsigned int pc_comm_read_bytes(uint8_t *dest, unsigned int count){
 inline void pc_comm_handle_write(void){
     uint8_t b;
     cb_read_byte(&pc_comm_wb, &b);      // Read next byte
-    UCA0TXBUF = b;                      // Put next byte in TXBUF
     if(cb_empty(&pc_comm_wb))
         DISABLE_TX_INT;                 // Nothing left. Don't run ISR next time
                                         // IFG gets set when this byte done
                                         // So next time write is called and ISR
                                         // enabled, IFG will be set to start tx
+    UCA0TXBUF = b;                      // Put next byte in TXBUF
 }
 
 inline void pc_comm_handle_read(void){
