@@ -30,7 +30,6 @@ extern float aht10_temperature;             // Last read temperature (deg C)
 extern float aht10_humidity;                // Last read humidity (%)
 extern unsigned int aht10_ec;               // Current error code for AHT10
 extern bbi2c_transaction aht10_trans;       // Transaction var for AHT10
-extern uint32_t aht10_last_read;            // Time of last read completion
 
 
 ////////////////////////////////////////////////////////////////////////////////

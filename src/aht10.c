@@ -224,8 +224,6 @@ void aht10_actions(void){
 }
 
 void aht10_init(void){
-    aht10_last_read = 0;                    // Never read. Init to zero.
-
     aht10_trans.address = ADDR_DEF;         // Set device address
     aht10_trans.write_buf = aht10_wb;       // Configure write buffer
     aht10_trans.read_buf = aht10_rb;        // Configure read buffer
@@ -240,8 +238,6 @@ void aht10_read(void){
     // read_requested transition trigger
     if(aht10_state != STATE_IDLE)
         return;                             // No effect if not in idle state
-
-    aht10_last_read = timers_now;           // Store read start time
     aht10_state = STATE_TRG;                // Transition to trigger state
     aht10_actions();                        // State changed. Run state actions
 }

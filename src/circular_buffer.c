@@ -9,7 +9,7 @@
 /// Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-void cb_init(volatile circular_buffer *cb, uint8_t *backing_array, unsigned int length){
+void cb_init(volatile circular_buffer *cb, volatile uint8_t *backing_array, unsigned int length){
     cb->data = backing_array;
     cb->length = length;
     cb->read_pos = 0;

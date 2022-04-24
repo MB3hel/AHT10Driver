@@ -2,6 +2,7 @@
  * @file circular_buffer.h
  * @brief Ciruclar (ring) buffer implementation for comm protocols
  * Implemented to be ISR safe
+ * Note: Currently a bug if overfilling buffer
  * @author Marcus Behel (mgbehel@ncsu.edu)
  * @version 1.0.0
  */
@@ -18,7 +19,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
-    uint8_t *data;              // Backing array for the buffer
+    volatile uint8_t *data;     // Backing array for the buffer
     unsigned int length;        // Length of backing array
     unsigned int read_pos;      // Position to remove data from buffer at
     unsigned int write_pos;     // Position to insert data into buffer at
@@ -37,7 +38,7 @@ typedef struct {
  * @param backing_array Pointer to array to back the circular buffer
  * @param length Length of the array backing the circular buffer
  */
-void cb_init(volatile circular_buffer *cb, uint8_t *backing_array, unsigned int length);
+void cb_init(volatile circular_buffer *cb, volatile uint8_t *backing_array, unsigned int length);
 
 /**
  * Write a single byte into the circular buffer

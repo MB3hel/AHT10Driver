@@ -38,8 +38,17 @@ volatile uint8_t flags = 0;
 #define CLEAR_FLAG(x)       flags &= ~(x)
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Program Entry Point
+/// Program main tree
 ////////////////////////////////////////////////////////////////////////////////
+
+// TODO: Use a better method than this...
+void format_value(unsigned int value, char *dest){
+    // Two digits of value
+    dest[1] = value % 10 + 48;
+    value /= 10;
+    dest[0] = value % 10 + 48;
+    dest[2] = '\0';
+}
 
 int main(void){
     // -------------------------------------------------------------------------
@@ -74,17 +83,18 @@ int main(void){
             // -----------------------------------------------------------------
             // Run every 10ms
             // -----------------------------------------------------------------
-            // Nothing here
+
+            // Note: Uncomment to cause overflow bug
+            // TODO: Fix this bug
+            // pc_comm_write_str("ABCDEFGHIJKLMNOPQRSTUVWXYZ1234\r\n");
+
             // -----------------------------------------------------------------
         }else if(CHECK_FLAG(TIMING_100MS)){
             CLEAR_FLAG(TIMING_100MS);
             // -----------------------------------------------------------------
             // Run every 100ms
             // -----------------------------------------------------------------
-            // Attempt to read AHT10 every 500ms
-            if(timers_now - aht10_last_read > 500){
-                aht10_read();           // Request new sensor data
-            }
+            // Nothing here
             // -----------------------------------------------------------------
         }else if(CHECK_FLAG(TIMING_500MS)){
             CLEAR_FLAG(TIMING_500MS);
@@ -92,7 +102,7 @@ int main(void){
             // Run every 500ms
             // -----------------------------------------------------------------
             GRN_LED_TOGGLE;
-            pc_comm_write_str("Hi\r\n");
+            aht10_read();               // Attempt to read AHT10 every 500ms
             // -----------------------------------------------------------------
         }else if(CHECK_FLAG(TIMING_1S)){
             CLEAR_FLAG(TIMING_1S);
@@ -100,13 +110,25 @@ int main(void){
             // Run every 1sec
             // -----------------------------------------------------------------
             RED_LED_TOGGLE;
+            char buf[3];
+            pc_comm_write_str("T: ");
+            format_value((int)aht10_temperature, buf);
+            pc_comm_write_str(buf);
+            pc_comm_write_byte('.');
+            format_value((int)(aht10_temperature * 100), buf);
+            pc_comm_write_str(buf);
+            pc_comm_write_str("\n");
+            pc_comm_write_str("H: ");
+            format_value((int)aht10_humidity, buf);
+            pc_comm_write_str(buf);
+            pc_comm_write_byte('.');
+            format_value((int)(aht10_humidity * 100), buf);
+            pc_comm_write_str(buf);
+            pc_comm_write_str("\n\n");
             // -----------------------------------------------------------------
         }else if(CHECK_FLAG(AHT10_DONE)){
             CLEAR_FLAG(AHT10_DONE);
-            if(aht10_i2c_done(!CHECK_FLAG(AHT10_FAIL))){
-                // Function returned true. New data available
-                __no_operation();
-            }
+            aht10_i2c_done(!CHECK_FLAG(AHT10_FAIL));
             CLEAR_FLAG(AHT10_FAIL);
         }else{
             // No flags set. Enter LPM0. Interrupts will exit LPM0 when flag set
