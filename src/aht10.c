@@ -240,7 +240,7 @@ void aht10_actions(void){
         // Floating point calculation
         // temperature = (((float)tmp * 200) / (2^20)) - 50
         // So to keep first two decimal points as last to digits of integer
-        // temperature = (tmp * 20000) / (2^20);
+        // temperature = (tmp * 20000) / (2^20) - 5000;
         // However, tmp could be up to 2^20 * 20000 > 32-bit int
         // But (20000)/(2^20) = (625)/(2^15)
         // 2^20 * 625 does not exceed 32-bit int so this works
@@ -249,7 +249,7 @@ void aht10_actions(void){
         tmp = (tmp << 9) + (tmp << 6) + (tmp << 5) + (tmp << 4) + tmp;
 
         // Divide by 2^15
-        aht10_temperature = tmp >> 15;
+        aht10_temperature = (tmp >> 15) - 5000;
 
         break;
     }
