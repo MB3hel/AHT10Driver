@@ -126,7 +126,70 @@ void bbi2c_perform(bbi2c_transaction *trans){
  *     endif
  *
  *     if(trans->read_count > 0)
- *         // TODO: Implement this
+ *         pos = 0
+ *         // Start bit
+ *         SDA_LOW
+ *         small_delay()
+ *         SCL_LOW
+ *         delay()
+ *
+ *         // Control byte
+ *         data = trans->adddress << 1
+ *         for(bit = 0; bit < 8; ++bit)
+ *             if(data & BIT7) SDA_HIGH
+ *             else SDA_LOW
+ *             small_delay()
+ *             SCL_HIGH;
+ *             delay()
+ *             data <<= 1
+ *             SCL_LOW
+ *             delay()
+ *         endfor
+ *         SDA_HIGH
+ *         small_delay()
+ *         SCL_HIGH
+ *         while(!SCL_READ) // Slave may be clock stretching
+ *         delay()
+ *
+ *         // Read data
+ *         if(!SDA_READ)
+ *             for(pos = 0; pos < trans->read_count; ++pos)
+ *                 while(!SCL_READ); // Slave may be clock stretching
+ *                 data = 0
+ *                 SCL_LOW;
+ *                 delay()
+ *                 SDA_HIGH
+ *                 for(bit = 0; bit < 8; ++bit)
+ *                     data <<= 1
+ *                     SCL_HIGH
+ *                     delay()
+ *                     if(SDA_READ) data |= 0x01;
+ *                     SCL_LOW
+ *                     delay()
+ *                 endfor
+ *                 trans->read_buf[pos] = data
+ *
+ *                 // Send ACK for all but last byte (NACK last byte to end read)
+ *                 if(pos == trans->read_count - 1) SDA_HIGH;
+ *                 else SDA_LOW;
+ *                 small_delay()
+ *                 SCL_HIGH;
+ *                 while(!SCL_RED); // Slave may be clock stretching
+ *                 delay()
+ *             endfor
+ *         endif
+ *
+ *         // Stop bit
+ *         SCL_LOW
+ *         small_delay()
+ *         SDA_LOW
+ *         delay()
+ *         SCL_HIGH
+ *         small_delay()
+ *         SDA_HIGH
+ *         delay()
+ *
+ *         return pos == trans->read_count
  *     endif
  *
  *     return true;

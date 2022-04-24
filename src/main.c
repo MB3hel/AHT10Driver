@@ -37,7 +37,6 @@ volatile uint8_t flags = 0;
 #define CHECK_FLAG(x)       (flags & x)
 #define CLEAR_FLAG(x)       flags &= ~(x)
 
-
 ////////////////////////////////////////////////////////////////////////////////
 /// Program Entry Point
 ////////////////////////////////////////////////////////////////////////////////
@@ -53,6 +52,7 @@ int main(void){
     ports_init();                       // Ports initialization & config
     timers_init();                      // Timer initialization
     bbi2c_init();                       // Initialize SW I2C
+    aht10_init();                       // Initialize AHT10 state machine
 
     // -------------------------------------------------------------------------
     // Setup initial state
@@ -80,8 +80,8 @@ int main(void){
             // Run every 100ms
             // -----------------------------------------------------------------
             // Attempt to read AHT10 every 500ms
-            if(aht10_status == AHT10_IDLE && timers_now - aht10_last_read > 500){
-                aht10_read();
+            if(timers_now - aht10_last_read > 500){
+                aht10_read();           // Request new sensor data
             }
             // -----------------------------------------------------------------
         }else if(CHECK_FLAG(TIMING_250MS)){
@@ -107,12 +107,11 @@ int main(void){
             // -----------------------------------------------------------------
         }else if(CHECK_FLAG(AHT10_DONE)){
             CLEAR_FLAG(AHT10_DONE);
-            if(CHECK_FLAG(AHT10_FAIL)){
-                CLEAR_FLAG(AHT10_FAIL);
-                aht10_i2c_done(false);
-            }else{
-                aht10_i2c_done(true);
+            if(aht10_i2c_done(!CHECK_FLAG(AHT10_FAIL))){
+                // Function returned true. New data available
+                __no_operation();
             }
+            CLEAR_FLAG(AHT10_FAIL);
         }else{
             // No flags set. Enter LPM0. Interrupts will exit LPM0 when flag set
             LPM0;

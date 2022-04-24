@@ -17,21 +17,20 @@
 /// Macros
 ////////////////////////////////////////////////////////////////////////////////
 
-// AHT10 Status
-#define AHT10_NOINIT            0           // Not initialized
-#define AHT10_IDLE              1           // Idle (can request read)
-#define AHT10_BUSY              2           // Busy (cannot request read)
-#define AHT10_NODEV             3           // Device not found
+// AHT10 Error Codes
+#define AHT10_EC_NONE               0       // No error
+#define AHT10_EC_NODEV              1       // Device not connected (I2C fail)
+#define AHT10_EC_NOCAL              2       // Device calibration failed
 
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Globals
 ////////////////////////////////////////////////////////////////////////////////
-extern unsigned int aht10_temperature;      // Last read temperature (deg C)
-extern unsigned int aht10_humidity;         // Last read humidity (%)
+extern float aht10_temperature;             // Last read temperature (deg C)
+extern float aht10_humidity;                // Last read humidity (%)
+extern unsigned int aht10_ec;               // Current error code for AHT10
 extern bbi2c_transaction aht10_trans;       // Transaction var for AHT10
 extern uint32_t aht10_last_read;            // Time of last read completion
-extern unsigned int aht10_status;           // Current status
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -51,5 +50,6 @@ void aht10_read(void);
 /**
  * Indicate that I2C transaction finished. Triggers state changes.
  * @param success true if I2C transaction successful; false if not.
+ * @return true if there are new temp / humidity values available else false
  */
-void aht10_i2c_done(bool success);
+bool aht10_i2c_done(bool success);
